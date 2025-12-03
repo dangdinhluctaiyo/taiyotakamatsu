@@ -93,9 +93,17 @@ app.put('/api/products/:id', async (c) => {
     `UPDATE products SET code=?, name=?, category=?, price_per_day=?, total_owned=?, 
      current_physical_stock=?, image_url=?, images=?, location=?, specs=? WHERE id=?`
   ).bind(
-    data.code, data.name, data.category, data.pricePerDay, data.totalOwned,
-    data.currentPhysicalStock, data.imageUrl, JSON.stringify(data.images || []),
-    data.location, data.specs, id
+    data.code || '', 
+    data.name || '', 
+    data.category || 'Khác', 
+    data.pricePerDay || 0, 
+    data.totalOwned || 0,
+    data.currentPhysicalStock || 0, 
+    data.imageUrl || '', 
+    JSON.stringify(data.images || []),
+    data.location || '', 
+    data.specs || '', 
+    id
   ).run();
   return c.json({ success: true });
 });
