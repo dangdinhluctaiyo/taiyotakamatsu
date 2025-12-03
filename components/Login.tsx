@@ -13,7 +13,9 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -22,11 +24,20 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
       return;
     }
 
-    const user = db.login(username, password);
-    if (user) {
-      onLogin();
-    } else {
+    setLoading(true);
+    try {
+      // Try async login first (cloud)
+      const user = await (db as any).loginAsync?.(username, password) || db.login(username, password);
+      if (user) {
+        onLogin();
+      } else {
+        setError(t('login_error'));
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       setError(t('login_error'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,9 +96,10 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-bold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-xl font-bold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50"
             >
-              {t('login')}
+              {loading ? '...' : t('login')}
             </button>
           </form>
         </div>

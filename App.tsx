@@ -24,8 +24,31 @@ export default function App() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const refreshApp = () => setTick(t => t + 1);
+  // Load data from cloud on mount
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        await db.init();
+      } catch (e) {
+        console.error('Failed to load data:', e);
+      } finally {
+        setIsLoading(false);
+        setTick(t => t + 1);
+      }
+    };
+    loadData();
+  }, []);
+
+  const refreshApp = async () => {
+    try {
+      await db.refresh();
+    } catch (e) {
+      console.error('Refresh failed:', e);
+    }
+    setTick(t => t + 1);
+  };
   const isAdmin = db.currentUser?.role === 'admin';
 
   const handleLogout = () => {
@@ -33,9 +56,23 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
+  // Show loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Package className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-white font-medium">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show login if not logged in
   if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
+    return <Login onLogin={() => { setIsLoggedIn(true); setTick(t => t + 1); }} />;
   }
 
   const handleReset = () => {
