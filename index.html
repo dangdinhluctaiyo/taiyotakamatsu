@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LucRental Pro</title>
+    
+    <!-- Premium Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: '#2563eb', // Royal Blue
+              primaryDark: '#1e40af',
+              secondary: '#64748b', // Slate
+              background: '#f8fafc', // Very light blue-grey
+              surface: '#ffffff',
+            },
+            boxShadow: {
+              'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+              'glow': '0 0 15px rgba(37, 99, 235, 0.2)',
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-background text-slate-800 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

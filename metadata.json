@@ -1,0 +1,7 @@
+{
+  "name": "LucRental Pro",
+  "description": "Professional Equipment Rental Management System with QR workflows and Sub-renting logic.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

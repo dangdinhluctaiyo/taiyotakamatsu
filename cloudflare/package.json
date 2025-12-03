@@ -1,0 +1,20 @@
+{
+  "name": "lucrental-cloudflare-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create lucrental-db",
+    "db:migrate": "wrangler d1 execute lucrental-db --file=./schema.sql",
+    "r2:create": "wrangler r2 bucket create lucrental-images"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.22.1"
+  },
+  "dependencies": {
+    "hono": "^3.12.6"
+  }
+}
