@@ -38,6 +38,35 @@ const translations = {
     nav_scanner: 'Quét QR',
     nav_history: 'Lịch sử',
     nav_staff: 'Nhân viên',
+    nav_customers: 'Khách hàng',
+    nav_categories: 'Danh mục',
+    
+    // Customer Management
+    customer_management: 'Quản lý khách hàng',
+    customer_management_desc: 'Quản lý thông tin khách hàng',
+    total_customers: 'Tổng KH',
+    search_customer: 'Tìm khách hàng...',
+    add_customer: 'Thêm khách hàng',
+    edit_customer: 'Sửa khách hàng',
+    no_customers: 'Chưa có khách hàng',
+    cannot_delete_customer_with_orders: 'Không thể xóa khách hàng đã có đơn hàng',
+    phone: 'Điện thoại',
+    orders: 'Đơn hàng',
+    
+    // Category Management
+    category_management: 'Quản lý danh mục',
+    category_management_desc: 'Quản lý danh mục thiết bị',
+    total_categories: 'Tổng danh mục',
+    search_category: 'Tìm danh mục...',
+    add_category: 'Thêm danh mục',
+    edit_category: 'Sửa danh mục',
+    no_categories: 'Chưa có danh mục',
+    category_name: 'Tên danh mục',
+    category_tip: 'Danh mục sẽ tự động được tạo khi bạn thêm sản phẩm mới với danh mục này',
+    category_created_info: 'Danh mục sẽ được tạo khi thêm sản phẩm mới với danh mục này',
+    cannot_delete_category_with_products: 'Không thể xóa danh mục có sản phẩm',
+    total_stock: 'Tổng tồn kho',
+    category_empty: 'Danh mục không có sản phẩm sẽ tự động bị xóa',
     
     // Dashboard
     dashboard_title: 'Tổng Quan Hệ Thống',

@@ -8,15 +8,19 @@ import { InventoryHistory } from './components/InventoryHistory';
 import { Login } from './components/Login';
 import { StaffManager } from './components/StaffManager';
 import { InventoryForecast } from './components/InventoryForecast';
+import { CustomerManager } from './components/CustomerManager';
+import { CategoryManager } from './components/CategoryManager';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { LayoutDashboard, ShoppingCart, Box, ScanLine, RotateCcw, ChevronRight, Package, Truck, History, Users, LogOut, User, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Box, ScanLine, RotateCcw, ChevronRight, Package, Truck, History, Users, LogOut, User, TrendingUp, UserCircle, FolderOpen, ArrowUp } from 'lucide-react';
 import { db } from './services/db';
 import { Order, OrderStatus } from './types';
 import { t } from './services/i18n';
 
 // Simple Router Component
 export default function App() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'SCANNER' | 'HISTORY' | 'STAFF' | 'FORECAST'>('DASHBOARD');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'SCANNER' | 'HISTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'CATEGORIES'>('DASHBOARD');
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [tick, setTick] = useState(0);
@@ -124,6 +128,8 @@ export default function App() {
           <div className="px-4 py-2">
             <p className="text-xs font-bold text-slate-500 uppercase px-4 mb-2 tracking-wider">Admin</p>
             <nav className="space-y-1 relative z-10">
+              <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers') || 'Khách hàng'} />
+              <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
               <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
             </nav>
           </div>
@@ -164,7 +170,14 @@ export default function App() {
         <MobileNavBtn active={view === 'HISTORY'} onClick={() => setView('HISTORY')} icon={<History />} label={t('nav_history')} />
       </div>
 
-      <main className="flex-1 overflow-auto relative scroll-smooth">
+      <main 
+        ref={mainRef}
+        className="flex-1 overflow-auto relative scroll-smooth"
+        onScroll={(e) => {
+          const target = e.target as HTMLElement;
+          setShowScrollTop(target.scrollTop > 300);
+        }}
+      >
         <div className="md:hidden p-4 bg-white/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -404,6 +417,10 @@ export default function App() {
 
           {view === 'STAFF' && <StaffManager refreshApp={refreshApp} />}
 
+          {view === 'CUSTOMERS' && <CustomerManager refreshApp={refreshApp} />}
+
+          {view === 'CATEGORIES' && <CategoryManager refreshApp={refreshApp} />}
+
           {view === 'SCANNER' && <Scanner refreshApp={refreshApp} />}
         </div>
       </main>
@@ -418,6 +435,17 @@ export default function App() {
           onClose={() => setSelectedOrder(null)} 
           refreshApp={() => { refreshApp(); setSelectedOrder(db.orders.find(o => o.id === selectedOrder.id) || null); }} 
         />
+      )}
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-24 md:bottom-8 right-4 md:right-8 w-12 h-12 bg-primary text-white rounded-full shadow-lg hover:bg-primaryDark transition-all flex items-center justify-center z-40"
+          title="Về đầu trang"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
       )}
 
       {/* Reset Data Modal - Admin Only */}

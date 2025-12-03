@@ -119,6 +119,20 @@ app.post('/api/customers', async (c) => {
   return c.json({ id: result.meta.last_row_id });
 });
 
+app.put('/api/customers/:id', async (c) => {
+  const id = c.req.param('id');
+  const data = await c.req.json();
+  await c.env.DB.prepare('UPDATE customers SET name=?, phone=? WHERE id=?')
+    .bind(data.name, data.phone || '', id).run();
+  return c.json({ success: true });
+});
+
+app.delete('/api/customers/:id', async (c) => {
+  const id = c.req.param('id');
+  await c.env.DB.prepare('DELETE FROM customers WHERE id = ?').bind(id).run();
+  return c.json({ success: true });
+});
+
 // ============ ORDERS ============
 app.get('/api/orders', async (c) => {
   const { results: orders } = await c.env.DB.prepare('SELECT * FROM orders ORDER BY id DESC').all();
