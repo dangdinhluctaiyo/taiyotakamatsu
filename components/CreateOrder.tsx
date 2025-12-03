@@ -3,8 +3,10 @@ import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Customer, Product, OrderItem, OrderStatus } from '../types';
 import { Plus, Trash2, AlertCircle, UserPlus, Package, X } from 'lucide-react';
+import { useToast } from './Toast';
 
 export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void }> = ({ onClose, refreshApp }) => {
+  const { error } = useToast();
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [dates, setDates] = useState({ start: '', end: '' });
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
@@ -17,7 +19,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
   const [availableQty, setAvailableQty] = useState<number | null>(null);
   const [subRentMode, setSubRentMode] = useState(false);
   const [subRentSupplier, setSubRentSupplier] = useState<number | null>(null);
-  
+
   // Order note
   const [orderNote, setOrderNote] = useState('');
 
@@ -63,9 +65,9 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
     }
   }, [tempProduct, dates, tempQty]);
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (!newCustomer.name.trim()) return;
-    const created = db.addCustomer({ name: newCustomer.name, phone: newCustomer.phone });
+    const created = await db.addCustomer({ name: newCustomer.name, phone: newCustomer.phone });
     setCustomerId(created.id);
     setShowNewCustomer(false);
     setNewCustomer({ name: '', phone: '' });
@@ -93,8 +95,10 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
       ]);
     } else {
       if (needed > stock) {
-        alert(`Kho chỉ còn ${stock} cái. Vui lòng chọn Thuê ngoài hoặc giảm số lượng.`);
-        return;
+        if (needed > stock) {
+          error(t('stock_remaining').replace('{0}', stock.toString()));
+          return;
+        }
       }
       setSelectedItems([
         ...selectedItems,
@@ -129,7 +133,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
 
     // Create temporary products for custom items and add to order
     const allItems = [...selectedItems];
-    
+
     customItems.forEach(ci => {
       // Create a temporary product entry
       const tempId = -Math.floor(Math.random() * 100000); // Negative ID for custom
@@ -137,13 +141,13 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
         id: tempId,
         code: `CUSTOM-${Date.now()}`,
         name: ci.name,
-        category: 'Thuê ngoài',
+        category: t('external_rent_category'),
         pricePerDay: ci.pricePerDay,
         totalOwned: 0,
         currentPhysicalStock: 0,
         imageUrl: 'https://via.placeholder.com/150?text=External'
       });
-      
+
       allItems.push({
         itemId: Math.random().toString(),
         productId: tempId,
@@ -295,7 +299,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
 
                     <div className="mb-3">
                       <label className="block text-xs text-gray-500 mb-1">{t('product_note')}</label>
-                      <input type="text" className="w-full border p-2 rounded text-sm" value={tempNote} onChange={e => setTempNote(e.target.value)} placeholder="VD: Màu đỏ, size L..." />
+                      <input type="text" className="w-full border p-2 rounded text-sm" value={tempNote} onChange={e => setTempNote(e.target.value)} placeholder={t('placeholder_color_size')} />
                     </div>
 
                     <button
@@ -372,7 +376,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
           {/* Order Note */}
           <div className="mt-4">
             <label className="block text-sm font-medium mb-1">{t('order_general_note')}</label>
-            <textarea className="w-full border p-2 rounded text-sm" rows={2} value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="VD: Giao hàng trước 8h sáng, liên hệ anh Minh..." />
+            <textarea className="w-full border p-2 rounded text-sm" rows={2} value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder={t('placeholder_delivery')} />
           </div>
         </div>
 
@@ -410,7 +414,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                   className="w-full border p-2 rounded"
                   value={newCustomer.name}
                   onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                  placeholder="VD: Anh Minh"
+                  placeholder={t('placeholder_name')}
                 />
               </div>
               <div>
@@ -420,7 +424,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                   className="w-full border p-2 rounded"
                   value={newCustomer.phone}
                   onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                  placeholder="VD: 0909123456"
+                  placeholder={t('placeholder_phone')}
                 />
               </div>
               <button
@@ -451,7 +455,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                   className="w-full border p-2 rounded"
                   value={newProduct.name}
                   onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                  placeholder="VD: Máy chiếu Epson"
+                  placeholder={t('placeholder_product_name')}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -488,7 +492,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('note')}</label>
-                <input type="text" className="w-full border p-2 rounded" value={newProduct.note} onChange={e => setNewProduct({ ...newProduct, note: e.target.value })} placeholder="VD: Màu trắng, model 2024..." />
+                <input type="text" className="w-full border p-2 rounded" value={newProduct.note} onChange={e => setNewProduct({ ...newProduct, note: e.target.value })} placeholder={t('placeholder_product_note')} />
               </div>
               <button
                 onClick={handleAddCustomProduct}

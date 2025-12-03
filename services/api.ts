@@ -26,6 +26,8 @@ export const api = {
   // Customers
   getCustomers: () => request<Customer[]>('/customers'),
   createCustomer: (data: Partial<Customer>) => request<Customer>('/customers', { method: 'POST', body: JSON.stringify(data) }),
+  updateCustomer: (id: number, data: Partial<Customer>) => request<Customer>(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCustomer: (id: number) => request<void>(`/customers/${id}`, { method: 'DELETE' }),
 
   // Suppliers
   getSuppliers: () => request<Supplier[]>('/suppliers'),

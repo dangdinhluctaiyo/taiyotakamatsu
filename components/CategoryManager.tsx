@@ -3,6 +3,8 @@ import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Plus, Edit, Trash2, Search, X, Tag, FolderOpen } from 'lucide-react';
 
+import { useToast } from './Toast';
+
 interface Props {
   refreshApp: () => void;
 }
@@ -12,6 +14,8 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [formData, setFormData] = useState('');
+
+  const { success, error } = useToast();
 
   const isAdmin = db.currentUser?.role === 'admin';
 
@@ -25,7 +29,7 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
   }, [db.products]);
 
   const filteredCategories = useMemo(() => {
-    return categories.filter(c => 
+    return categories.filter(c =>
       c.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [categories, searchTerm]);
@@ -44,7 +48,7 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
 
   const handleSave = async () => {
     if (!formData.trim()) {
-      alert(t('please_enter_info'));
+      error(t('please_enter_info'));
       return;
     }
 
@@ -56,22 +60,30 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
       }
     } else {
       // Just close modal - category will be created when adding product
-      alert(t('category_created_info') || 'Danh mục sẽ được tạo khi thêm sản phẩm mới với danh mục này');
+      success(t('category_created_info') || 'Danh mục sẽ được tạo khi thêm sản phẩm mới với danh mục này');
     }
-    
+
     refreshApp();
     setIsModalOpen(false);
   };
 
   const handleDelete = async (category: string) => {
     const productCount = getProductCount(category);
-    if (productCount > 0) {
-      alert(t('cannot_delete_category_with_products') || `Không thể xóa danh mục có ${productCount} sản phẩm`);
+    // Category without products will be removed automatically
+    if (productCount === 0) {
+      success(t('category_empty') || 'Danh mục không có sản phẩm sẽ tự động bị xóa');
       return;
     }
-    
-    // Category without products will be removed automatically
-    alert(t('category_empty') || 'Danh mục không có sản phẩm sẽ tự động bị xóa');
+
+    if (confirm(t('confirm_delete_category').replace('{0}', productCount.toString()))) {
+      // Update all products in this category to 'Uncategorized'
+      const productsToUpdate = db.products.filter(p => p.category === category);
+      for (const product of productsToUpdate) {
+        await db.saveProduct({ ...product, category: 'Uncategorized' });
+      }
+      success(t('delete_success'));
+      refreshApp();
+    }
   };
 
   // Get product count for each category
@@ -156,15 +168,13 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
                     >
                       <Edit className="w-4 h-4" />
                     </button>
-                    {getProductCount(category) === 0 && (
-                      <button
-                        onClick={() => handleDelete(category)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-500"
-                        title={t('delete')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDelete(category)}
+                      className="p-2 hover:bg-red-50 rounded-lg text-red-500"
+                      title={t('delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -197,7 +207,7 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
                   className="w-full border p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-primary/20"
                   value={formData}
                   onChange={e => setFormData(e.target.value)}
-                  placeholder="VD: Âm thanh, Ánh sáng, Ghế..."
+                  placeholder={t('placeholder_category')}
                 />
               </div>
               {!editingCategory && (

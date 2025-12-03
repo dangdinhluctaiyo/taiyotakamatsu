@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { db } from '../services/db';
-import { t } from '../services/i18n';
+import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
 import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, AlertCircle, LayoutGrid, List as ListIcon, Box, Calendar, DollarSign, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link } from 'lucide-react';
+import { useToast } from './Toast';
 
 export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
   const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('GRID');
@@ -12,9 +13,11 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [showQRFor, setShowQRFor] = useState<Product | null>(null);
   const [viewHistoryFor, setViewHistoryFor] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewDetailFor, setViewDetailFor] = useState<Product | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+
+  const { success, error } = useToast();
   const isAdmin = db.currentUser?.role === 'admin';
 
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -25,27 +28,43 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredProducts = useMemo(() => {
-    return db.products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [db.products, searchTerm]);
+    return db.products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'ALL' || p.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [db.products, searchTerm, selectedCategory]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(db.products.map(p => p.category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [db.products]);
 
   const totalItemsCount = db.products.reduce((sum, p) => sum + p.totalOwned, 0);
   const lowStockItems = db.products.filter(p => p.currentPhysicalStock < 3).length;
 
-  const handleEdit = (product: Product) => { 
-    if (!isAdmin) { alert(t('only_admin_can_edit')); return; }
-    setEditingProduct(product); setFormData({ ...product }); setIsModalOpen(true); 
+  const handleEdit = (product: Product) => {
+    console.log('handleEdit - isAdmin:', isAdmin, 'currentUser:', db.currentUser);
+    if (!isAdmin) { error(t('only_admin_can_edit')); return; }
+    setEditingProduct(product); setFormData({ ...product }); setIsModalOpen(true);
   };
-  const handleAddNew = () => { 
-    if (!isAdmin) { alert(t('only_admin_can_add')); return; }
-    setEditingProduct(null); setFormData({ name: '', code: '', category: 'Thiết bị', pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '' }); setIsModalOpen(true); 
+  const handleAddNew = () => {
+    console.log('handleAddNew - isAdmin:', isAdmin, 'currentUser:', db.currentUser);
+    if (!isAdmin) { error(t('only_admin_can_add')); return; }
+    setEditingProduct(null); setFormData({ name: '', code: '', category: 'Thiết bị', pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '' }); setIsModalOpen(true);
   };
-  const handleDelete = (id: number) => { 
-    if (!isAdmin) { alert(t('only_admin_can_delete')); return; }
-    if (confirm(t('delete_equipment_prompt'))) { db.deleteProduct(id); refreshApp(); } 
+  const handleDelete = async (id: number) => {
+    console.log('handleDelete - isAdmin:', isAdmin, 'currentUser:', db.currentUser);
+    if (!isAdmin) { error(t('only_admin_can_delete')); return; }
+    if (confirm(t('delete_equipment_prompt'))) {
+      await db.deleteProduct(id);
+      refreshApp();
+      success(t('delete_success') || 'Đã xóa thiết bị');
+    }
   };
 
-  const handleSave = () => {
-    if (!formData.name || !formData.code) { alert(t('enter_name_code')); return; }
+  const handleSave = async () => {
+    if (!formData.name || !formData.code) { error(t('enter_name_code')); return; }
     const productToSave: Product = {
       id: editingProduct ? editingProduct.id : 0, code: formData.code!, name: formData.name!, category: formData.category || 'Khác',
       pricePerDay: Number(formData.pricePerDay), totalOwned: Number(formData.totalOwned),
@@ -53,20 +72,23 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       imageUrl: formData.imageUrl || formData.images?.[0] || 'https://via.placeholder.com/150',
       images: formData.images || [], location: formData.location || '', specs: formData.specs || ''
     };
-    db.saveProduct(productToSave); refreshApp(); setIsModalOpen(false);
+    await db.saveProduct(productToSave);
+    refreshApp();
+    setIsModalOpen(false);
+    success(editingProduct ? (t('update_success') || 'Cập nhật thành công') : (t('create_success') || 'Tạo mới thành công'));
   };
 
   const addImage = () => { if (newImageUrl.trim()) { setFormData({ ...formData, images: [...(formData.images || []), newImageUrl] }); setNewImageUrl(''); } };
   const removeImage = (idx: number) => { setFormData({ ...formData, images: formData.images?.filter((_, i) => i !== idx) }); };
-  
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
-      
+
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
@@ -74,7 +96,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       };
       reader.readAsDataURL(file);
     }
-    
+
     // Reset input
     e.target.value = '';
   };
@@ -120,6 +142,18 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
           <div className="relative flex-1 md:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input type="text" placeholder={t('search_equipment')} className="w-full pl-9 pr-4 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+          <div className="w-full md:w-48">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm outline-none cursor-pointer"
+            >
+              <option value="ALL">{t('all_categories') || 'Tất cả danh mục'}</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
         </div>
         {isAdmin && (
@@ -238,7 +272,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               )}
               <div className="absolute bottom-4 left-4"><span className="bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-sm font-mono font-bold shadow">{viewDetailFor.code}</span></div>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -299,7 +333,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                       <div key={order.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div>
                           <span className="font-medium text-slate-800">{customer?.name}</span>
-                          <p className="text-xs text-slate-500">{new Date(order.rentalStartDate).toLocaleDateString('vi-VN')} → {new Date(order.expectedReturnDate).toLocaleDateString('vi-VN')}</p>
+                          <p className="text-xs text-slate-500">{new Date(order.rentalStartDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')} → {new Date(order.expectedReturnDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-slate-700">x{item?.quantity}</span>
@@ -325,7 +359,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                         </span>
                         <div>
                           <span className="font-medium text-slate-800">{log.actionType === 'EXPORT' ? t('export_stock') : log.actionType === 'IMPORT' ? t('import_stock') : t('adjust')}</span>
-                          <p className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleString('vi-VN')}</p>
+                          <p className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
                         </div>
                       </div>
                       <span className="font-bold text-slate-700">x{log.quantity}</span>
@@ -340,7 +374,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               {isAdmin && (
                 <>
                   <button onClick={() => { setViewDetailFor(null); handleEdit(viewDetailFor); }} className="flex-1 py-2.5 bg-primary text-white rounded-lg font-bold hover:bg-primaryDark flex items-center justify-center gap-2"><Edit className="w-4 h-4" /> {t('edit')}</button>
-                  <button onClick={() => { if(confirm(t('delete_equipment_prompt'))) { handleDelete(viewDetailFor.id); setViewDetailFor(null); } }} className="py-2.5 px-4 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> {t('delete')}</button>
+                  <button onClick={() => { if (confirm(t('delete_equipment_prompt'))) { handleDelete(viewDetailFor.id); setViewDetailFor(null); } }} className="py-2.5 px-4 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> {t('delete')}</button>
                 </>
               )}
             </div>
@@ -394,7 +428,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><ImageIcon className="w-3 h-3 inline" /> {t('images')}</label>
-                
+
                 {/* Toggle buttons */}
                 <div className="flex gap-2 mb-2">
                   <button
@@ -506,7 +540,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                     <tr><td colSpan={5} className="p-8 text-center text-slate-400">{t('no_transactions')}</td></tr>
                   ) : getProductLogs(viewHistoryFor.id).map(log => (
                     <tr key={log.id} className="hover:bg-slate-50/80">
-                      <td className="p-4 text-slate-600">{new Date(log.timestamp).toLocaleDateString('vi-VN')} <span className="text-slate-400 text-xs">{new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span></td>
+                      <td className="p-4 text-slate-600">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')} <span className="text-slate-400 text-xs">{new Date(log.timestamp).toLocaleTimeString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP', { hour: '2-digit', minute: '2-digit' })}</span></td>
                       <td className="p-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${log.actionType === 'EXPORT' ? 'bg-orange-50 text-orange-700 border-orange-200' : log.actionType === 'IMPORT' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
                           {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownLeft className="w-3 h-3" />}

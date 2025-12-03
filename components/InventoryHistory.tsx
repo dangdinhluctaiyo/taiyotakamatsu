@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { db } from '../services/db';
-import { t } from '../services/i18n';
+import { t, i18n } from '../services/i18n';
 import { InventoryLog } from '../types';
 import { History, ArrowUpRight, ArrowDownLeft, Search, Edit, Trash2, X, Save } from 'lucide-react';
 
@@ -100,9 +100,8 @@ export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refresh
             <button
               key={f.key}
               onClick={() => setFilterType(f.key as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
-                filterType === f.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${filterType === f.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+                }`}
             >
               {f.label}
             </button>
@@ -122,8 +121,8 @@ export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refresh
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div className={`p-1.5 rounded-lg ${log.actionType === 'EXPORT' ? 'bg-orange-100' : 'bg-green-100'}`}>
-                      {log.actionType === 'EXPORT' ? 
-                        <ArrowUpRight className="w-4 h-4 text-orange-600" /> : 
+                      {log.actionType === 'EXPORT' ?
+                        <ArrowUpRight className="w-4 h-4 text-orange-600" /> :
                         <ArrowDownLeft className="w-4 h-4 text-green-600" />
                       }
                     </div>
@@ -141,7 +140,7 @@ export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refresh
                 </div>
                 <div className="mt-2 pt-2 border-t flex items-center justify-between text-xs text-slate-500">
                   <div>
-                    <span>{new Date(log.timestamp).toLocaleDateString('vi-VN')}</span>
+                    <span>{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</span>
                     {log.staffName && <span className="ml-2">• {log.staffName}</span>}
                   </div>
                   <div className="flex gap-1">
@@ -183,13 +182,12 @@ export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refresh
                 return (
                   <tr key={log.id} className="hover:bg-slate-50">
                     <td className="p-3">
-                      <div className="text-sm">{new Date(log.timestamp).toLocaleDateString('vi-VN')}</div>
-                      <div className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div className="text-sm">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</div>
+                      <div className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleTimeString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP', { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>
                     <td className="p-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${
-                        log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-                      }`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+                        }`}>
                         {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownLeft className="w-3 h-3" />}
                         {log.actionType === 'EXPORT' ? t('export').toUpperCase() : t('import').toUpperCase()}
                       </span>

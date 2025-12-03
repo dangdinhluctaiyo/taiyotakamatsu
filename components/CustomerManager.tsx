@@ -4,6 +4,8 @@ import { t } from '../services/i18n';
 import { Customer } from '../types';
 import { Plus, Edit, Trash2, Search, X, Phone, User, Users } from 'lucide-react';
 
+import { useToast } from './Toast';
+
 interface Props {
   refreshApp: () => void;
 }
@@ -14,10 +16,11 @@ export const CustomerManager: React.FC<Props> = ({ refreshApp }) => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '' });
 
+  const { success, error } = useToast();
   const isAdmin = db.currentUser?.role === 'admin';
 
   const filteredCustomers = useMemo(() => {
-    return db.customers.filter(c => 
+    return db.customers.filter(c =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.phone.includes(searchTerm)
     );
@@ -37,7 +40,7 @@ export const CustomerManager: React.FC<Props> = ({ refreshApp }) => {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert(t('please_enter_info'));
+      error(t('please_enter_info'));
       return;
     }
 
@@ -46,22 +49,24 @@ export const CustomerManager: React.FC<Props> = ({ refreshApp }) => {
     } else {
       await db.addCustomer(formData);
     }
-    
+
     refreshApp();
     setIsModalOpen(false);
+    success(editingCustomer ? (t('update_success') || 'Cập nhật thành công') : (t('create_success') || 'Tạo mới thành công'));
   };
 
   const handleDelete = async (id: number) => {
     // Check if customer has orders
     const hasOrders = db.orders.some(o => o.customerId === id);
     if (hasOrders) {
-      alert(t('cannot_delete_customer_with_orders') || 'Không thể xóa khách hàng đã có đơn hàng');
+      error(t('cannot_delete_customer_with_orders') || 'Không thể xóa khách hàng đã có đơn hàng');
       return;
     }
-    
+
     if (confirm(t('delete_confirm'))) {
       await db.deleteCustomer(id);
       refreshApp();
+      success(t('delete_success') || 'Đã xóa khách hàng');
     }
   };
 
@@ -199,7 +204,7 @@ export const CustomerManager: React.FC<Props> = ({ refreshApp }) => {
                   className="w-full border p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-primary/20"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="VD: Công ty ABC"
+                  placeholder={t('placeholder_company')}
                 />
               </div>
               <div>
@@ -209,7 +214,7 @@ export const CustomerManager: React.FC<Props> = ({ refreshApp }) => {
                   className="w-full border p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-primary/20"
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="VD: 0909123456"
+                  placeholder={t('placeholder_phone')}
                 />
               </div>
             </div>

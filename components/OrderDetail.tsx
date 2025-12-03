@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { db } from '../services/db';
-import { t } from '../services/i18n';
+import { t, i18n } from '../services/i18n';
 import { Order, OrderStatus, OrderItem } from '../types';
 import { X, CheckCircle2, Plus, Calendar, ArrowDownCircle, Trash2, Clock, AlertCircle, AlertTriangle, User } from 'lucide-react';
+import { useToast } from './Toast';
 
 interface Props {
   order: Order;
@@ -11,12 +12,13 @@ interface Props {
 }
 
 export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => {
+  const { success, error } = useToast();
   const [showAddItem, setShowAddItem] = useState(false);
   const [showExtendDate, setShowExtendDate] = useState(false);
   const [showPartialReturn, setShowPartialReturn] = useState<OrderItem | null>(null);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showReturnAll, setShowReturnAll] = useState(false);
-  
+
   const [newProductId, setNewProductId] = useState<number | null>(null);
   const [newQty, setNewQty] = useState(1);
   const [newItemNote, setNewItemNote] = useState('');
@@ -45,8 +47,8 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
   };
 
   const expectedDays = calcDays(order.rentalStartDate, order.expectedReturnDate);
-  const actualDays = order.status === OrderStatus.COMPLETED 
-    ? calcDays(order.rentalStartDate, order.actualReturnDate!) 
+  const actualDays = order.status === OrderStatus.COMPLETED
+    ? calcDays(order.rentalStartDate, order.actualReturnDate!)
     : calcDays(order.rentalStartDate, new Date().toISOString());
 
   const calcAmount = (days: number) => order.items.reduce((sum, item) => {
@@ -67,7 +69,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     if (!isExternal) {
       const avail = db.checkAvailability(newProductId, order.rentalStartDate, order.expectedReturnDate);
       if (avail < newQty) {
-        alert(`${t('available_stock')}: ${avail}`);
+        error(`${t('available_stock')}: ${avail}`);
         return;
       }
     }
@@ -92,7 +94,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
   };
 
   const handleReturnAll = () => {
-    if (!returnStaffName.trim()) { alert(t('please_enter_info')); return; }
+    if (!returnStaffName.trim()) { error(t('please_enter_info')); return; }
     order.items.forEach(item => {
       const remaining = (item.exportedQuantity || item.quantity) - item.returnedQuantity;
       if (remaining > 0) {
@@ -116,13 +118,13 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
 
   const handlePartialReturn = () => {
     if (!showPartialReturn || returnQty < 1 || !returnStaffName.trim()) {
-      if (!returnStaffName.trim()) alert(t('please_enter_info'));
+      if (!returnStaffName.trim()) error(t('please_enter_info'));
       return;
     }
     const item = order.items.find(i => i.itemId === showPartialReturn.itemId);
     if (!item) return;
     const maxReturn = (item.exportedQuantity || item.quantity) - item.returnedQuantity;
-    if (returnQty > maxReturn) { alert(`${t('remaining_qty')}: ${maxReturn}`); return; }
+    if (returnQty > maxReturn) { error(`${t('remaining_qty')}: ${maxReturn}`); return; }
     item.returnedAt = new Date().toISOString();
     item.returnedBy = returnStaffName;
     db.importStock(order.id, item.productId, returnQty, `${t('return_partial')} - ${t('staff_label')}: ${returnStaffName}`);
@@ -134,7 +136,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
 
   const handleRemoveItem = (itemId: string) => {
     const item = order.items.find(i => i.itemId === itemId);
-    if (item?.exportedQuantity && item.exportedQuantity > 0) { alert(t('cannot_delete_exported')); return; }
+    if (item?.exportedQuantity && item.exportedQuantity > 0) { error(t('cannot_delete_exported')); return; }
     if (confirm(t('delete_equipment_confirm'))) {
       order.items = order.items.filter(i => i.itemId !== itemId);
       recalculateTotal();
@@ -143,7 +145,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
   };
 
   const handleForceComplete = () => {
-    if (!staffName.trim()) { alert(t('please_enter_info')); return; }
+    if (!staffName.trim()) { error(t('please_enter_info')); return; }
     db.forceCompleteOrder(order.id, staffName);
     refreshApp();
     onClose();
@@ -157,11 +159,10 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
           <div>
             <div className="flex items-center gap-3">
               <h3 className="font-bold text-xl">{t('order_number')} #{order.id}</h3>
-              <span className={`px-2 py-1 rounded text-xs font-bold ${
-                order.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+              <span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
                 order.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
-                'bg-orange-100 text-orange-700'
-              }`}>{order.status === 'ACTIVE' ? t('order_status_active') : order.status === 'COMPLETED' ? t('order_status_completed') : t('order_status_booked')}</span>
+                  'bg-orange-100 text-orange-700'
+                }`}>{order.status === 'ACTIVE' ? t('order_status_active') : order.status === 'COMPLETED' ? t('order_status_completed') : t('order_status_booked')}</span>
               {isOverdue && <span className="px-2 py-1 rounded text-xs font-bold bg-red-500 text-white animate-pulse">{t('overdue')}</span>}
             </div>
             <p className="text-slate-600 mt-1">{customer?.name} • {customer?.phone}</p>
@@ -174,11 +175,11 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div className="bg-slate-50 p-3 rounded-lg">
               <p className="text-slate-500 text-xs">{t('start_date')}</p>
-              <p className="font-bold">{new Date(order.rentalStartDate).toLocaleDateString('vi-VN')}</p>
+              <p className="font-bold">{new Date(order.rentalStartDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
             </div>
             <div className={`p-3 rounded-lg ${isOverdue ? 'bg-red-50' : 'bg-slate-50'}`}>
               <p className="text-slate-500 text-xs">{t('end_date')}</p>
-              <p className={`font-bold ${isOverdue ? 'text-red-600' : ''}`}>{new Date(order.expectedReturnDate).toLocaleDateString('vi-VN')}</p>
+              <p className={`font-bold ${isOverdue ? 'text-red-600' : ''}`}>{new Date(order.expectedReturnDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg">
               <p className="text-slate-500 text-xs">{t('num_days')}</p>
@@ -261,7 +262,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                         <td className="p-3 text-center">
                           <div className="flex gap-1 justify-center">
                             {remaining > 0 && (
-                              <button 
+                              <button
                                 onClick={() => { setShowPartialReturn(item); setReturnQty(1); }}
                                 className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                                 title={t('return_partial')}
@@ -270,7 +271,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                               </button>
                             )}
                             {exported === 0 && (
-                              <button 
+                              <button
                                 onClick={() => handleRemoveItem(item.itemId)}
                                 className="p-1.5 text-red-600 hover:bg-red-50 rounded"
                                 title={t('delete')}

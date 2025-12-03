@@ -1,6 +1,6 @@
 import React from 'react';
 import { db } from '../services/db';
-import { t } from '../services/i18n';
+import { t, i18n } from '../services/i18n';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Package, Truck, AlertTriangle, TrendingUp, ShoppingCart, Box } from 'lucide-react';
 
@@ -12,7 +12,7 @@ export const Dashboard: React.FC = () => {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const overdueOrders = db.orders.filter(o => {
     if (o.status !== 'ACTIVE') return false;
     const expectedDate = new Date(o.expectedReturnDate);
@@ -116,11 +116,11 @@ export const Dashboard: React.FC = () => {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barSize={16}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} width={30} />
-              <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px'}} />
-              <Bar dataKey="Used" stackId="a" fill="#3b82f6" name="Đã đặt" radius={[0, 0, 4, 4]} />
-              <Bar dataKey="Available" stackId="a" fill="#e2e8f0" name="Còn trống" radius={[4, 4, 0, 0]} />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} width={30} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }} />
+              <Bar dataKey="Used" stackId="a" fill="#3b82f6" name={t('booked')} radius={[0, 0, 4, 4]} />
+              <Bar dataKey="Available" stackId="a" fill="#e2e8f0" name={t('available')} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -137,22 +137,20 @@ export const Dashboard: React.FC = () => {
               const customer = db.customers.find(c => c.id === order.customerId);
               return (
                 <div key={order.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    order.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 
-                    order.status === 'BOOKED' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${order.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                      order.status === 'BOOKED' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'
+                    }`}>
                     #{order.id}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-800 text-sm truncate">{customer?.name}</p>
-                    <p className="text-xs text-slate-400">{new Date(order.rentalStartDate).toLocaleDateString('vi-VN')}</p>
+                    <p className="text-xs text-slate-400">{new Date(order.rentalStartDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-slate-700">{order.totalAmount.toLocaleString()}</p>
-                    <p className={`text-[10px] font-medium ${
-                      order.status === 'ACTIVE' ? 'text-green-600' : 
-                      order.status === 'BOOKED' ? 'text-orange-600' : 'text-slate-400'
-                    }`}>{order.status}</p>
+                    <p className={`text-[10px] font-medium ${order.status === 'ACTIVE' ? 'text-green-600' :
+                        order.status === 'BOOKED' ? 'text-orange-600' : 'text-slate-400'
+                      }`}>{order.status}</p>
                   </div>
                 </div>
               );
@@ -189,7 +187,7 @@ const MiniKPI = ({ title, value, icon, color }: { title: string; value: number; 
     orange: 'bg-orange-500',
     red: 'bg-red-500'
   };
-  
+
   return (
     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border">
       <div className="flex items-center gap-2 mb-2">

@@ -20,7 +20,7 @@ const translations = {
     loading: 'Đang tải...',
     no_data: 'Chưa có dữ liệu',
     select: 'Chọn',
-    
+
     // Auth
     username: 'Tên đăng nhập',
     password: 'Mật khẩu',
@@ -30,7 +30,7 @@ const translations = {
     enter_username: 'Nhập tên đăng nhập',
     enter_password: 'Nhập mật khẩu',
     rental_system: 'Hệ thống quản lý cho thuê thiết bị',
-    
+
     // Navigation
     nav_dashboard: 'Tổng quan',
     nav_orders: 'Đơn hàng',
@@ -40,7 +40,7 @@ const translations = {
     nav_staff: 'Nhân viên',
     nav_customers: 'Khách hàng',
     nav_categories: 'Danh mục',
-    
+
     // Customer Management
     customer_management: 'Quản lý khách hàng',
     customer_management_desc: 'Quản lý thông tin khách hàng',
@@ -52,7 +52,7 @@ const translations = {
     cannot_delete_customer_with_orders: 'Không thể xóa khách hàng đã có đơn hàng',
     phone: 'Điện thoại',
     orders: 'Đơn hàng',
-    
+
     // Category Management
     category_management: 'Quản lý danh mục',
     category_management_desc: 'Quản lý danh mục thiết bị',
@@ -67,7 +67,9 @@ const translations = {
     cannot_delete_category_with_products: 'Không thể xóa danh mục có sản phẩm',
     total_stock: 'Tổng tồn kho',
     category_empty: 'Danh mục không có sản phẩm sẽ tự động bị xóa',
-    
+    confirm_delete_category: 'Bạn có chắc muốn xóa danh mục này? {0} sản phẩm trong danh mục sẽ chuyển sang "Chưa phân loại".',
+    all_categories: 'Tất cả danh mục',
+
     // Dashboard
     dashboard_title: 'Tổng Quan Hệ Thống',
     dashboard_welcome: 'Xin chào',
@@ -83,7 +85,7 @@ const translations = {
     top_equipment: 'Top thiết bị',
     equipment: 'Thiết bị',
     transactions: 'Giao dịch',
-    
+
     // Orders
     orders_title: 'Quản lý Đơn Hàng',
     create_order: 'Tạo đơn mới',
@@ -114,7 +116,7 @@ const translations = {
     exported: 'Đã xuất',
     waiting_export: 'Chờ xuất',
     fully_returned: 'Đã trả đủ',
-    
+
     // Products
     products_title: 'Kho & Tài Sản',
     add_product: 'Thêm thiết bị',
@@ -148,7 +150,7 @@ const translations = {
     edit_product: 'Chỉnh sửa thiết bị',
     add_new_product: 'Thêm thiết bị mới',
     low_stock: 'Sắp hết',
-    
+
     // Scanner
     scanner_title: 'Xuất / Nhập Kho',
     open_camera: 'Mở camera quét QR',
@@ -166,7 +168,7 @@ const translations = {
     current_stock_label: 'Tồn kho hiện tại',
     not_found: 'Không tìm thấy',
     select_other: 'Chọn sản phẩm khác',
-    
+
     // History
     history_title: 'Lịch sử Xuất/Nhập',
     export: 'Xuất',
@@ -178,7 +180,7 @@ const translations = {
     order: 'Đơn hàng',
     no_transactions: 'Chưa có giao dịch',
     edit_note: 'Chỉnh sửa ghi chú',
-    
+
     // Staff
     staff_title: 'Quản lý Nhân viên',
     add_staff: 'Thêm nhân viên',
@@ -197,7 +199,7 @@ const translations = {
     logged_in: 'Đang đăng nhập',
     cannot_delete_self: 'Không thể xóa tài khoản đang đăng nhập',
     cannot_disable_self: 'Không thể vô hiệu hóa tài khoản đang đăng nhập',
-    
+
     // Misc
     vnd: 'đ',
     reset_data: 'Reset dữ liệu',
@@ -211,7 +213,24 @@ const translations = {
     reset_all_data: 'Reset toàn bộ dữ liệu',
     please_enter_info: 'Vui lòng nhập đầy đủ thông tin',
     delete_confirm: 'Bạn có chắc muốn xóa?',
-    
+    delete_success: 'Xóa thành công',
+    update_success: 'Cập nhật thành công',
+    create_success: 'Tạo mới thành công',
+    booked: 'Đã đặt',
+    available: 'Còn trống',
+    stock_remaining: 'Kho chỉ còn {0} cái. Vui lòng chọn Thuê ngoài hoặc giảm số lượng.',
+    external_rent_category: 'Thuê ngoài',
+    placeholder_color_size: 'VD: Màu đỏ, size L...',
+    placeholder_delivery: 'VD: Giao hàng trước 8h sáng, liên hệ anh Minh...',
+    placeholder_name: 'VD: Anh Minh',
+    placeholder_phone: 'VD: 0909123456',
+    placeholder_product_name: 'VD: Máy chiếu Epson',
+    placeholder_product_note: 'VD: Màu trắng, model 2024...',
+    placeholder_company: 'VD: Công ty ABC',
+    placeholder_category: 'VD: Âm thanh, Ánh sáng, Ghế...',
+    placeholder_staff_name: 'VD: Nguyễn Văn A',
+    placeholder_username: 'VD: nhanvien1',
+
     // CreateOrder
     create_order_title: 'Tạo Đơn Hàng Mới',
     select_customer: 'Chọn khách hàng...',
@@ -239,7 +258,7 @@ const translations = {
     supplier_optional: 'Nhà cung cấp (nếu có)',
     no_select: '-- Không chọn --',
     per_day: '/ngày',
-    
+
     // OrderDetail
     order_number: 'Đơn',
     overdue: 'QUÁ HẠN',
@@ -272,7 +291,7 @@ const translations = {
     cannot_delete_exported: 'Không thể xóa thiết bị đã xuất kho',
     delete_equipment_confirm: 'Xóa thiết bị này?',
     only_left_in_stock: 'Chỉ còn {0} trong kho.',
-    
+
     // Scanner
     not_enough_in_stock: 'Không đủ hàng trong kho!',
     export_success: '✓ Xuất {0} {1}',
@@ -286,7 +305,7 @@ const translations = {
     note_placeholder: 'VD: Xuất cho anh Minh, Trả hàng từ chị Lan...',
     import_btn: 'NHẬP KHO',
     export_btn: 'XUẤT KHO',
-    
+
     // StaffManager
     staff_management: 'Quản lý Nhân viên',
     staff_management_desc: 'Quản lý tài khoản đăng nhập hệ thống',
@@ -297,7 +316,7 @@ const translations = {
     active_status: 'Hoạt động',
     inactive_status: 'Vô hiệu',
     password_change_hint: 'Mật khẩu mới (để trống nếu không đổi)',
-    
+
     // InventoryHistory
     inventory_history: 'Lịch sử kho',
     track_transactions: 'Theo dõi giao dịch xuất nhập',
@@ -307,7 +326,7 @@ const translations = {
     no_transactions_yet: 'Chưa có giao dịch',
     edit_record: 'Chỉnh sửa',
     delete_record_confirm: 'Xóa bản ghi này?',
-    
+
     // ProductManager
     inventory_assets: 'Kho & Tài Sản',
     inventory_desc: 'Quản lý nhập xuất và theo dõi vòng đời thiết bị.',
@@ -331,7 +350,7 @@ const translations = {
     total_owned_label: 'Tổng sở hữu',
     at_warehouse: 'Tại kho',
     vnd_per_day: 'VNĐ/ngày',
-    
+
     // Inventory Forecast
     inventory_forecast: 'Dự báo tồn kho',
     forecast_desc: 'Xem tồn kho dự kiến theo ngày dựa trên đơn hàng',
@@ -358,7 +377,7 @@ const translations = {
     rental_start_date: 'Ngày bắt đầu thuê',
     return: 'Nhập kho',
   },
-  
+
   ja: {
     // Common
     app_name: 'LucRental Pro',
@@ -376,7 +395,7 @@ const translations = {
     loading: '読み込み中...',
     no_data: 'データがありません',
     select: '選択',
-    
+
     // Auth
     username: 'ユーザー名',
     password: 'パスワード',
@@ -386,7 +405,7 @@ const translations = {
     enter_username: 'ユーザー名を入力',
     enter_password: 'パスワードを入力',
     rental_system: '機材レンタル管理システム',
-    
+
     // Navigation
     nav_dashboard: 'ダッシュボード',
     nav_orders: '注文',
@@ -394,7 +413,38 @@ const translations = {
     nav_scanner: 'QRスキャン',
     nav_history: '履歴',
     nav_staff: 'スタッフ',
-    
+    nav_customers: '顧客',
+    nav_categories: 'カテゴリ',
+
+    // Customer Management
+    customer_management: '顧客管理',
+    customer_management_desc: '顧客情報の管理',
+    total_customers: '総顧客数',
+    search_customer: '顧客を検索...',
+    add_customer: '顧客追加',
+    edit_customer: '顧客編集',
+    no_customers: '顧客がいません',
+    cannot_delete_customer_with_orders: '注文がある顧客は削除できません',
+    phone: '電話番号',
+    orders: '注文',
+
+    // Category Management
+    category_management: 'カテゴリ管理',
+    category_management_desc: '機材カテゴリの管理',
+    total_categories: '総カテゴリ数',
+    search_category: 'カテゴリを検索...',
+    add_category: 'カテゴリ追加',
+    edit_category: 'カテゴリ編集',
+    no_categories: 'カテゴリがありません',
+    category_name: 'カテゴリ名',
+    category_tip: 'このカテゴリで商品を登録すると自動的に作成されます',
+    category_created_info: 'このカテゴリで商品を登録すると作成されます',
+    cannot_delete_category_with_products: '商品があるカテゴリは削除できません',
+    total_stock: '総在庫',
+    category_empty: '商品がないカテゴリは自動的に削除されます',
+    confirm_delete_category: 'このカテゴリを削除しますか？含まれる {0} 個の商品は「未分類」になります。',
+    all_categories: 'すべてのカテゴリ',
+
     // Dashboard
     dashboard_title: 'システム概要',
     dashboard_welcome: 'こんにちは',
@@ -410,7 +460,7 @@ const translations = {
     top_equipment: 'トップ機材',
     equipment: '機材',
     transactions: '取引',
-    
+
     // Orders
     orders_title: '注文管理',
     create_order: '新規注文',
@@ -441,7 +491,7 @@ const translations = {
     exported: '出庫済み',
     waiting_export: '出庫待ち',
     fully_returned: '返却完了',
-    
+
     // Products
     products_title: '在庫・資産',
     add_product: '機材追加',
@@ -475,7 +525,7 @@ const translations = {
     edit_product: '機材編集',
     add_new_product: '新規機材追加',
     low_stock: '在庫少',
-    
+
     // Scanner
     scanner_title: '入出庫',
     open_camera: 'QRカメラを開く',
@@ -493,7 +543,7 @@ const translations = {
     current_stock_label: '現在の在庫',
     not_found: '見つかりません',
     select_other: '他の商品を選択',
-    
+
     // History
     history_title: '入出庫履歴',
     export: '出庫',
@@ -505,7 +555,7 @@ const translations = {
     order: '注文',
     no_transactions: '取引がありません',
     edit_note: 'メモ編集',
-    
+
     // Staff
     staff_title: 'スタッフ管理',
     add_staff: 'スタッフ追加',
@@ -524,7 +574,7 @@ const translations = {
     logged_in: 'ログイン中',
     cannot_delete_self: 'ログイン中のアカウントは削除できません',
     cannot_disable_self: 'ログイン中のアカウントは無効化できません',
-    
+
     // Misc
     vnd: '円',
     reset_data: 'データリセット',
@@ -538,7 +588,24 @@ const translations = {
     reset_all_data: 'すべてのデータをリセット',
     please_enter_info: '必要な情報を入力してください',
     delete_confirm: '本当に削除しますか？',
-    
+    delete_success: '削除しました',
+    update_success: '更新しました',
+    create_success: '作成しました',
+    booked: '予約済み',
+    available: '空き',
+    stock_remaining: '在庫は{0}個のみです。外部レンタルを選択するか、数量を減らしてください。',
+    external_rent_category: '外部レンタル',
+    placeholder_color_size: '例：赤、Lサイズ...',
+    placeholder_delivery: '例：午前8時までに配送、ミンさんに連絡...',
+    placeholder_name: '例：ミンさん',
+    placeholder_phone: '例：090-1234-5678',
+    placeholder_product_name: '例：エプソンプロジェクター',
+    placeholder_product_note: '例：白、2024年モデル...',
+    placeholder_company: '例：ABC株式会社',
+    placeholder_category: '例：音響、照明、椅子...',
+    placeholder_staff_name: '例：山田太郎',
+    placeholder_username: '例：staff1',
+
     // CreateOrder
     create_order_title: '新規注文作成',
     select_customer: '顧客を選択...',
@@ -566,7 +633,7 @@ const translations = {
     supplier_optional: 'サプライヤー（任意）',
     no_select: '-- 選択なし --',
     per_day: '/日',
-    
+
     // OrderDetail
     order_number: '注文',
     overdue: '延滞',
@@ -599,7 +666,7 @@ const translations = {
     cannot_delete_exported: '出庫済みの機材は削除できません',
     delete_equipment_confirm: 'この機材を削除しますか？',
     only_left_in_stock: '在庫は{0}個のみです。',
-    
+
     // Scanner
     not_enough_in_stock: '在庫が不足しています！',
     export_success: '✓ {1}を{0}個出庫',
@@ -613,7 +680,7 @@ const translations = {
     note_placeholder: '例：山田さんに出庫、田中さんから返却...',
     import_btn: '入庫',
     export_btn: '出庫',
-    
+
     // StaffManager
     staff_management: 'スタッフ管理',
     staff_management_desc: 'システムログインアカウント管理',
@@ -624,7 +691,7 @@ const translations = {
     active_status: '有効',
     inactive_status: '無効',
     password_change_hint: '新しいパスワード（変更しない場合は空欄）',
-    
+
     // InventoryHistory
     inventory_history: '在庫履歴',
     track_transactions: '入出庫取引を追跡',
@@ -634,7 +701,7 @@ const translations = {
     no_transactions_yet: '取引がありません',
     edit_record: '編集',
     delete_record_confirm: 'このレコードを削除しますか？',
-    
+
     // ProductManager
     inventory_assets: '在庫・資産',
     inventory_desc: '入出庫管理と機材ライフサイクル追跡',
@@ -658,7 +725,7 @@ const translations = {
     total_owned_label: '総所有数',
     at_warehouse: '現在庫',
     vnd_per_day: '円/日',
-    
+
     // Inventory Forecast
     inventory_forecast: '在庫予測',
     forecast_desc: '注文に基づいた日別在庫予測を表示',

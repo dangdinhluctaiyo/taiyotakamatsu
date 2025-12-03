@@ -16,20 +16,20 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
   const [note, setNote] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const scannerRef = useRef<any>(null);
-  
+
   // Lấy thông tin nhân viên đang đăng nhập
   const currentStaff = db.currentUser;
-  
+
   // Lấy danh sách đơn hàng đang hoạt động (BOOKED hoặc ACTIVE)
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
-  
+
   // Khi chọn đơn hàng, tự động điền ghi chú
   useEffect(() => {
     if (selectedOrderId) {
       const order = db.orders.find(o => o.id === selectedOrderId);
       if (order) {
         const customer = db.customers.find(c => c.id === order.customerId);
-        setNote(`#${order.id} - ${customer?.name || 'Khách hàng'}`);
+        setNote(`#${order.id} - ${customer?.name || t('customer')}`);
       }
     }
   }, [selectedOrderId]);
@@ -38,17 +38,17 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     if (showCamera) {
       setTimeout(() => {
         const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-        scanner.render(onScanSuccess, () => {});
+        scanner.render(onScanSuccess, () => { });
         scannerRef.current = scanner;
       }, 100);
     } else {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {});
+        scannerRef.current.clear().catch(() => { });
         scannerRef.current = null;
       }
     }
     return () => {
-      if (scannerRef.current) scannerRef.current.clear().catch(() => {});
+      if (scannerRef.current) scannerRef.current.clear().catch(() => { });
     };
   }, [showCamera]);
 
@@ -74,7 +74,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     const exactMatch = db.products.find(p => p.code.toLowerCase() === query);
     if (exactMatch) { selectProduct(exactMatch); return; }
 
-    const matches = db.products.filter(p => 
+    const matches = db.products.filter(p =>
       p.code.toLowerCase().includes(query) || p.name.toLowerCase().includes(query)
     );
 
@@ -96,7 +96,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       setFeedback({ type: 'error', msg: t('not_enough_stock') });
       return;
     }
-    
+
     // Giảm tồn kho và ghi log
     scannedProduct.currentPhysicalStock -= quantity;
     db.logs.push({
@@ -111,10 +111,10 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       staffName: currentStaff?.name || 'Unknown'
     });
     (db as any).save?.();
-    
+
     setFeedback({ type: 'success', msg: `✓ ${t('export_stock')} ${quantity} ${scannedProduct.name}\n${t('staff_label')}: ${currentStaff?.name}` });
     refreshApp();
-    
+
     // Reset sau 2s
     setTimeout(() => {
       setScannedProduct(null);
@@ -127,7 +127,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
 
   const handleImport = () => {
     if (!scannedProduct || quantity <= 0) return;
-    
+
     // Tăng tồn kho và ghi log
     scannedProduct.currentPhysicalStock += quantity;
     db.logs.push({
@@ -142,10 +142,10 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       staffName: currentStaff?.name || 'Unknown'
     });
     (db as any).save?.();
-    
+
     setFeedback({ type: 'success', msg: `✓ ${t('import_stock')} ${quantity} ${scannedProduct.name}\n${t('staff_label')}: ${currentStaff?.name}` });
     refreshApp();
-    
+
     setTimeout(() => {
       setScannedProduct(null);
       setQuantity(1);
@@ -165,7 +165,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       {!scannedProduct && (
         <div className="mb-4">
           {!showCamera ? (
-            <button 
+            <button
               onClick={() => setShowCamera(true)}
               className="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-slate-700"
             >
@@ -174,7 +174,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           ) : (
             <div className="bg-black rounded-xl overflow-hidden shadow-lg relative">
               <div id="reader" className="w-full"></div>
-              <button 
+              <button
                 onClick={() => setShowCamera(false)}
                 className="absolute top-2 right-2 bg-white/20 text-white p-2 rounded-full hover:bg-red-500"
               >
@@ -188,8 +188,8 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       {/* Search */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <div className="flex gap-2 relative">
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -197,7 +197,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
             className="flex-1 border p-3 rounded-lg pl-10 focus:ring-2 focus:ring-primary outline-none"
           />
           <Search className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
-          <button 
+          <button
             onClick={() => handleSearch()}
             className="bg-primary text-white px-6 rounded-lg font-medium hover:bg-blue-700"
           >
@@ -208,9 +208,8 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
 
       {/* Feedback */}
       {feedback && (
-        <div className={`p-4 mb-4 rounded-xl flex items-center gap-2 text-lg font-bold ${
-          feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-        }`}>
+        <div className={`p-4 mb-4 rounded-xl flex items-center gap-2 text-lg font-bold ${feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}>
           {feedback.type === 'success' && <CheckCircle className="w-6 h-6" />}
           {feedback.msg}
         </div>
@@ -222,7 +221,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           <div className="p-3 bg-gray-50 border-b font-medium">{t('select_product')} ({searchResults.length})</div>
           <div className="divide-y max-h-60 overflow-y-auto">
             {searchResults.map(p => (
-              <button 
+              <button
                 key={p.id}
                 onClick={() => selectProduct(p)}
                 className="w-full text-left p-3 hover:bg-blue-50 flex items-center gap-3"
@@ -262,21 +261,21 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           <div className="p-4 border-t">
             <label className="block text-sm font-medium mb-2">{t('quantity')}</label>
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 className="w-12 h-12 bg-gray-100 rounded-lg font-bold text-xl hover:bg-gray-200"
               >
                 -
               </button>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 className="flex-1 border-2 p-3 rounded-lg text-center font-bold text-2xl"
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
                 min={1}
               />
-              <button 
-                onClick={() => setQuantity(quantity + 1)} 
+              <button
+                onClick={() => setQuantity(quantity + 1)}
                 className="w-12 h-12 bg-gray-100 rounded-lg font-bold text-xl hover:bg-gray-200"
               >
                 +
@@ -330,13 +329,13 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-0 border-t">
-            <button 
+            <button
               onClick={handleImport}
               className="py-5 bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:bg-green-600 active:bg-green-700"
             >
               <ArrowDownCircle className="w-6 h-6" /> {t('import_btn')}
             </button>
-            <button 
+            <button
               onClick={handleExport}
               disabled={quantity > scannedProduct.currentPhysicalStock}
               className="py-5 bg-red-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:bg-red-600 active:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -346,7 +345,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           </div>
 
           {/* Cancel */}
-          <button 
+          <button
             onClick={() => setScannedProduct(null)}
             className="w-full py-3 text-gray-500 hover:bg-gray-50 text-sm"
           >
@@ -363,8 +362,8 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           </h3>
           <div className="bg-white rounded-xl shadow divide-y max-h-80 overflow-y-auto">
             {db.products.map(p => (
-              <div 
-                key={p.id} 
+              <div
+                key={p.id}
                 onClick={() => selectProduct(p)}
                 className="p-3 flex items-center gap-3 hover:bg-blue-50 cursor-pointer"
               >

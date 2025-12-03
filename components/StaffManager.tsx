@@ -141,11 +141,11 @@ export const StaffManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">{t('full_name')} *</label>
-                <input type="text" className="w-full border p-2 rounded-lg" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Nguyễn Văn A" />
+                <input type="text" className="w-full border p-2 rounded-lg" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder={t('placeholder_staff_name')} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('username')} *</label>
-                <input type="text" className="w-full border p-2 rounded-lg font-mono" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="nhanvien1" />
+                <input type="text" className="w-full border p-2 rounded-lg font-mono" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder={t('placeholder_username')} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{editingStaff ? t('password_change_hint') : t('password') + ' *'}</label>

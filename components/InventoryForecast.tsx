@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { db } from '../services/db';
-import { t } from '../services/i18n';
+import { t, i18n } from '../services/i18n';
 import { Calendar, Package, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, TrendingUp, AlertTriangle, Box, Search } from 'lucide-react';
 
 interface Props {
@@ -51,7 +51,7 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP', { weekday: 'short', day: '2-digit', month: '2-digit' });
   };
 
   const isToday = (dateStr: string) => {
@@ -199,9 +199,8 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
                 return (
                   <tr
                     key={item.productId}
-                    className={`hover:bg-slate-50 transition-colors ${
-                      selectedProduct === item.productId ? 'bg-blue-50' : ''
-                    }`}
+                    className={`hover:bg-slate-50 transition-colors ${selectedProduct === item.productId ? 'bg-blue-50' : ''
+                      }`}
                   >
                     <td className="p-4">
                       <div className="font-bold text-slate-800">{item.productName}</div>
@@ -230,9 +229,8 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
                     </td>
                     <td className="p-4 text-center">
                       <span
-                        className={`font-bold text-lg ${
-                          isOut ? 'text-red-600' : isLow ? 'text-yellow-600' : 'text-green-600'
-                        }`}
+                        className={`font-bold text-lg ${isOut ? 'text-red-600' : isLow ? 'text-yellow-600' : 'text-green-600'
+                          }`}
                       >
                         {item.forecastStock}
                       </span>
@@ -250,11 +248,10 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
                     <td className="p-4 text-center">
                       <button
                         onClick={() => setSelectedProduct(selectedProduct === item.productId ? null : item.productId)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          selectedProduct === item.productId
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedProduct === item.productId
                             ? 'bg-blue-500 text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                          }`}
                       >
                         {selectedProduct === item.productId ? t('hide') || 'Ẩn' : t('view') || 'Xem'}
                       </button>
@@ -288,17 +285,15 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
                 return (
                   <div
                     key={day.date}
-                    className={`flex-shrink-0 w-20 p-3 rounded-xl text-center border ${
-                      isTodayDate ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
-                    }`}
+                    className={`flex-shrink-0 w-20 p-3 rounded-xl text-center border ${isTodayDate ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
+                      }`}
                   >
                     <p className={`text-xs font-medium ${isTodayDate ? 'text-blue-600' : 'text-slate-500'}`}>
                       {formatDate(day.date)}
                     </p>
                     <p
-                      className={`text-xl font-bold mt-1 ${
-                        isOut ? 'text-red-600' : isLow ? 'text-yellow-600' : 'text-green-600'
-                      }`}
+                      className={`text-xl font-bold mt-1 ${isOut ? 'text-red-600' : isLow ? 'text-yellow-600' : 'text-green-600'
+                        }`}
                     >
                       {day.forecastStock}
                     </p>
@@ -330,15 +325,13 @@ export const InventoryForecast: React.FC<Props> = ({ refreshApp }) => {
                 {selectedProductDetail.orders.map((order, idx) => (
                   <div
                     key={`${order.orderId}-${order.type}-${idx}`}
-                    className={`flex items-center justify-between p-3 rounded-lg ${
-                      order.type === 'return' ? 'bg-green-50' : 'bg-orange-50'
-                    }`}
+                    className={`flex items-center justify-between p-3 rounded-lg ${order.type === 'return' ? 'bg-green-50' : 'bg-orange-50'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`p-2 rounded-lg ${
-                          order.type === 'return' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
-                        }`}
+                        className={`p-2 rounded-lg ${order.type === 'return' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                          }`}
                       >
                         {order.type === 'return' ? (
                           <ArrowDownLeft className="w-4 h-4" />

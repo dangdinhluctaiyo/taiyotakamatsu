@@ -123,7 +123,7 @@ export class MockDB {
     localStorage.removeItem('lucrental_session');
   }
 
-  saveProduct(product: Product) {
+  async saveProduct(product: Product) {
     if (product.id === 0) {
       const newProduct = {
         ...product,
@@ -131,7 +131,8 @@ export class MockDB {
         currentPhysicalStock: product.totalOwned,
       };
       this.products.push(newProduct);
-      fetchAPI('/api/products', {
+      this.products.push(newProduct);
+      await fetchAPI('/api/products', {
         method: 'POST',
         body: JSON.stringify(newProduct),
       }).catch(console.error);
@@ -144,7 +145,7 @@ export class MockDB {
           ...product,
           currentPhysicalStock: oldProduct.currentPhysicalStock + stockDiff,
         };
-        fetchAPI(`/api/products/\${product.id}`, {
+        await fetchAPI(`/api/products/${product.id}`, {
           method: 'PUT',
           body: JSON.stringify(this.products[index]),
         }).catch(console.error);
@@ -152,19 +153,35 @@ export class MockDB {
     }
   }
 
-  deleteProduct(id: number) {
+  async deleteProduct(id: number) {
     this.products = this.products.filter((p) => p.id !== id);
-    fetchAPI(`/api/products/\${id}`, { method: 'DELETE' }).catch(console.error);
+    await fetchAPI(`/api/products/${id}`, { method: 'DELETE' }).catch(console.error);
   }
 
-  addCustomer(customer: Omit<Customer, 'id'>): Customer {
+  async addCustomer(customer: Omit<Customer, 'id'>): Promise<Customer> {
     const newCustomer = { ...customer, id: generateId() };
     this.customers.push(newCustomer);
-    fetchAPI('/api/customers', {
+    await fetchAPI('/api/customers', {
       method: 'POST',
       body: JSON.stringify(newCustomer),
     }).catch(console.error);
     return newCustomer;
+  }
+
+  async updateCustomer(id: number, updates: Partial<Customer>) {
+    const index = this.customers.findIndex((c) => c.id === id);
+    if (index !== -1) {
+      this.customers[index] = { ...this.customers[index], ...updates };
+      await fetchAPI(`/api/customers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(this.customers[index]),
+      }).catch(console.error);
+    }
+  }
+
+  async deleteCustomer(id: number) {
+    this.customers = this.customers.filter((c) => c.id !== id);
+    await fetchAPI(`/api/customers/${id}`, { method: 'DELETE' }).catch(console.error);
   }
 
   addSupplier(supplier: Omit<Supplier, 'id'>): Supplier {
