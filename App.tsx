@@ -7,15 +7,16 @@ import { OrderDetail } from './components/OrderDetail';
 import { InventoryHistory } from './components/InventoryHistory';
 import { Login } from './components/Login';
 import { StaffManager } from './components/StaffManager';
+import { InventoryForecast } from './components/InventoryForecast';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { LayoutDashboard, ShoppingCart, Box, ScanLine, RotateCcw, ChevronRight, Package, Truck, History, Users, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Box, ScanLine, RotateCcw, ChevronRight, Package, Truck, History, Users, LogOut, User, TrendingUp } from 'lucide-react';
 import { db } from './services/db';
 import { Order, OrderStatus } from './types';
 import { t } from './services/i18n';
 
 // Simple Router Component
 export default function App() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'SCANNER' | 'HISTORY' | 'STAFF'>('DASHBOARD');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'SCANNER' | 'HISTORY' | 'STAFF' | 'FORECAST'>('DASHBOARD');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [tick, setTick] = useState(0);
@@ -112,6 +113,7 @@ export default function App() {
             <NavButton active={view === 'DASHBOARD'} onClick={() => setView('DASHBOARD')} icon={<LayoutDashboard />} label={t('nav_dashboard')} />
             <NavButton active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} count={db.orders.filter(o => o.status === 'ACTIVE').length} />
             <NavButton active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
+            <NavButton active={view === 'FORECAST'} onClick={() => setView('FORECAST')} icon={<TrendingUp />} label={t('nav_forecast')} />
             <NavButton active={view === 'HISTORY'} onClick={() => setView('HISTORY')} icon={<History />} label={t('nav_history')} />
             <NavButton active={view === 'SCANNER'} onClick={() => setView('SCANNER')} icon={<ScanLine />} label={t('nav_scanner')} isSpecial />
           </nav>
@@ -397,6 +399,8 @@ export default function App() {
           {view === 'INVENTORY' && <ProductManager refreshApp={refreshApp} />}
 
           {view === 'HISTORY' && <InventoryHistory refreshApp={refreshApp} />}
+
+          {view === 'FORECAST' && <InventoryForecast refreshApp={refreshApp} />}
 
           {view === 'STAFF' && <StaffManager refreshApp={refreshApp} />}
 
