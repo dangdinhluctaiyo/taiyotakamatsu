@@ -135,11 +135,13 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       </div>
 
       <div className="bg-white p-2 rounded-2xl shadow-soft border border-slate-100 flex flex-col md:flex-row gap-2 items-center justify-between">
-        <div className="flex gap-2 w-full md:w-auto p-1">
-          <button onClick={() => setViewMode('GRID')} className={`p-2 rounded-lg transition-all ${viewMode === 'GRID' ? 'bg-slate-100 text-slate-800 shadow-inner' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid className="w-5 h-5" /></button>
-          <button onClick={() => setViewMode('LIST')} className={`p-2 rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-slate-100 text-slate-800 shadow-inner' : 'text-slate-400 hover:text-slate-600'}`}><ListIcon className="w-5 h-5" /></button>
-          <div className="h-6 w-px bg-slate-200 mx-1 self-center"></div>
-          <div className="relative flex-1 md:w-80">
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto p-1">
+          <div className="flex gap-2 w-full md:w-auto">
+            <button onClick={() => setViewMode('GRID')} className={`flex-1 md:flex-none p-2 rounded-lg transition-all ${viewMode === 'GRID' ? 'bg-slate-100 text-slate-800 shadow-inner' : 'text-slate-400 hover:text-slate-600'}`}><LayoutGrid className="w-5 h-5 mx-auto" /></button>
+            <button onClick={() => setViewMode('LIST')} className={`hidden md:block p-2 rounded-lg transition-all ${viewMode === 'LIST' ? 'bg-slate-100 text-slate-800 shadow-inner' : 'text-slate-400 hover:text-slate-600'}`}><ListIcon className="w-5 h-5" /></button>
+          </div>
+          <div className="hidden md:block h-6 w-px bg-slate-200 mx-1 self-center"></div>
+          <div className="relative flex-1 md:w-80 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input type="text" placeholder={t('search_equipment')} className="w-full pl-9 pr-4 py-2 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
@@ -161,7 +163,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
         )}
       </div>
 
-      {viewMode === 'GRID' ? (
+      {viewMode === 'GRID' || window.innerWidth < 768 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map(p => {
             const stockPercent = (p.currentPhysicalStock / p.totalOwned) * 100;
@@ -255,8 +257,8 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
       {/* PRODUCT DETAIL MODAL */}
       {viewDetailFor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-3xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up md:animate-fade-in">
             {/* Image Gallery */}
             <div className="relative h-64 bg-slate-100">
               <img src={getAllImages(viewDetailFor)[currentImageIndex]} alt={viewDetailFor.name} className="w-full h-full object-cover" />
@@ -384,9 +386,9 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
       {/* EDIT/CREATE MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100">
-            <div className="p-5 border-b flex justify-between items-center bg-slate-50/50">
+        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-100 animate-slide-up md:animate-fade-in">
+            <div className="p-4 md:p-5 border-b flex justify-between items-center bg-slate-50/50 pt-[max(1rem,env(safe-area-inset-top))]">
               <h3 className="font-bold text-lg text-slate-800">{editingProduct ? t('edit_product') : t('add_new_product')}</h3>
               <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300"><X className="w-4 h-4 text-slate-600" /></button>
             </div>

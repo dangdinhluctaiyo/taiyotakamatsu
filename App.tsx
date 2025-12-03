@@ -172,7 +172,7 @@ function AppContent() {
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 z-50 pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)] shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <MobileNavBtn active={view === 'DASHBOARD'} onClick={() => setView('DASHBOARD')} icon={<LayoutDashboard />} label={t('nav_dashboard')} />
         <MobileNavBtn active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} />
         <MobileNavBtn active={view === 'SCANNER'} onClick={() => setView('SCANNER')} icon={<ScanLine />} isMain label={t('nav_scanner')} />
@@ -188,22 +188,22 @@ function AppContent() {
           setShowScrollTop(target.scrollTop > 300);
         }}
       >
-        <div className="md:hidden p-4 bg-white/80 backdrop-blur sticky top-0 z-30 shadow-sm border-b flex justify-between items-center">
+        <div className="md:hidden p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b flex justify-between items-center pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Package className="text-white w-5 h-5" />
             </div>
             <div>
               <h1 className="font-bold text-slate-800 text-sm leading-tight">LucRental</h1>
-              <p className="text-[10px] text-slate-500">{db.currentUser?.name}</p>
+              <p className="text-[10px] text-slate-500 font-medium">{db.currentUser?.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {view === 'ORDERS' && (
-              <button onClick={() => setShowCreateModal(true)} className="bg-primary text-white p-2 rounded-lg"><PlusIcon /></button>
+              <button onClick={() => setShowCreateModal(true)} className="bg-primary text-white p-2 rounded-lg shadow-lg shadow-blue-500/30 active:scale-95 transition-transform"><PlusIcon /></button>
             )}
             <LanguageSwitcher compact />
-            <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg" title={t('logout')}>
+            <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title={t('logout')}>
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -264,8 +264,8 @@ function AppContent() {
                     key={tab.key}
                     onClick={() => setOrderFilter(tab.key as any)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${orderFilter === tab.key
-                        ? 'bg-primary text-white shadow'
-                        : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                      ? 'bg-primary text-white shadow'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                       }`}
                   >
                     {tab.label} {tab.count > 0 && <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${orderFilter === tab.key ? 'bg-white/20' : 'bg-slate-100'}`}>{tab.count}</span>}
@@ -336,17 +336,17 @@ function AppContent() {
                   <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-white p-5 rounded-xl shadow-soft border border-slate-100 hover:shadow-lg hover:border-blue-100 transition-all cursor-pointer group relative overflow-hidden">
                     {/* Status Strip */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${(() => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const startDate = new Date(order.rentalStartDate);
-                        startDate.setHours(0, 0, 0, 0);
-                        const isStarted = startDate <= today;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const startDate = new Date(order.rentalStartDate);
+                      startDate.setHours(0, 0, 0, 0);
+                      const isStarted = startDate <= today;
 
-                        if (order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) return 'bg-green-500';
-                        if (order.status === 'COMPLETED') return 'bg-blue-500';
-                        if (order.status === 'CANCELLED') return 'bg-slate-300';
-                        return 'bg-orange-400';
-                      })()
+                      if (order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) return 'bg-green-500';
+                      if (order.status === 'COMPLETED') return 'bg-blue-500';
+                      if (order.status === 'CANCELLED') return 'bg-slate-300';
+                      return 'bg-orange-400';
+                    })()
                       }`}></div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-3">
@@ -371,18 +371,18 @@ function AppContent() {
                           <p className="text-lg font-bold text-slate-700">{order.totalAmount.toLocaleString()}{t('vnd')}</p>
                         </div>
                         <div className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center gap-2 ${(() => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const startDate = new Date(order.rentalStartDate);
-                            startDate.setHours(0, 0, 0, 0);
-                            const isStarted = startDate <= today;
-                            const isOverdue = new Date(order.expectedReturnDate) < new Date();
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const startDate = new Date(order.rentalStartDate);
+                          startDate.setHours(0, 0, 0, 0);
+                          const isStarted = startDate <= today;
+                          const isOverdue = new Date(order.expectedReturnDate) < new Date();
 
-                            if ((order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) && isOverdue) return 'bg-red-100 text-red-700 animate-pulse';
-                            if (order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) return 'bg-green-100 text-green-700';
-                            if (order.status === 'COMPLETED') return 'bg-blue-100 text-blue-700';
-                            return 'bg-orange-100 text-orange-700';
-                          })()
+                          if ((order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) && isOverdue) return 'bg-red-100 text-red-700 animate-pulse';
+                          if (order.status === 'ACTIVE' || (order.status === 'BOOKED' && isStarted)) return 'bg-green-100 text-green-700';
+                          if (order.status === 'COMPLETED') return 'bg-blue-100 text-blue-700';
+                          return 'bg-orange-100 text-orange-700';
+                        })()
                           }`}>
                           {(() => {
                             const today = new Date();
@@ -502,8 +502,8 @@ const NavButton = ({ active, onClick, icon, label, count, isSpecial }: any) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${active
-        ? 'bg-blue-600 text-white shadow-glow font-semibold'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      ? 'bg-blue-600 text-white shadow-glow font-semibold'
+      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
       } ${isSpecial ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg mt-4 border border-white/10' : ''}`}
   >
     {active && !isSpecial && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full"></div>}
@@ -523,8 +523,8 @@ const MobileNavBtn = ({ active, onClick, icon, isMain, label }: any) => (
   <button
     onClick={onClick}
     className={`relative flex flex-col items-center justify-center transition-all duration-300 ${isMain
-        ? 'bg-blue-600 text-white -mt-6 w-14 h-14 rounded-2xl shadow-glow'
-        : 'p-1 rounded-xl min-w-[50px]'
+      ? 'bg-blue-600 text-white -mt-6 w-14 h-14 rounded-2xl shadow-glow'
+      : 'p-1 rounded-xl min-w-[50px]'
       }`}
   >
     <div>

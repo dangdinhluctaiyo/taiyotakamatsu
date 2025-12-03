@@ -176,11 +176,11 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-          <h2 className="text-xl font-bold text-gray-800">{t('create_order_title')}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+    <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 z-50 overflow-hidden">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-xl shadow-2xl flex flex-col animate-slide-up md:animate-fade-in">
+        <div className="p-4 md:p-6 border-b flex justify-between items-center bg-gray-50 md:rounded-t-xl pt-[max(1rem,env(safe-area-inset-top))]">
+          <h2 className="text-lg md:text-xl font-bold text-gray-800">{t('create_order_title')}</h2>
+          <button onClick={onClose} className="p-2 -mr-2 text-gray-500 hover:text-gray-700 active:bg-gray-200 rounded-full"><X className="w-6 h-6" /></button>
         </div>
 
         <div className="p-6 overflow-y-auto flex-1">
@@ -381,16 +381,16 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
         </div>
 
         {/* Footer with Total */}
-        <div className="p-6 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
+        <div className="p-4 md:p-6 border-t bg-gray-50 md:rounded-b-xl flex flex-col md:flex-row justify-between items-center gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="text-lg">
             {t('estimated_total')}: <span className="font-bold text-primary text-xl">{estimatedTotal.toLocaleString()} {t('vnd')}</span>
           </div>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-gray-600 font-medium">{t('cancel')}</button>
+          <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+            <button onClick={onClose} className="px-4 py-3 md:py-2 text-gray-600 font-medium bg-white border rounded-lg active:bg-gray-50">{t('cancel')}</button>
             <button
               onClick={handleSubmit}
               disabled={selectedItems.length === 0 && customItems.length === 0}
-              className="px-6 py-2 bg-primary text-white rounded font-bold shadow hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-3 md:py-2 bg-primary text-white rounded-lg font-bold shadow hover:bg-blue-700 disabled:opacity-50 active:scale-95 transition-transform"
             >
               {t('save_order')}
             </button>
