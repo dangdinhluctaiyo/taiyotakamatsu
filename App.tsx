@@ -78,10 +78,12 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Package className="w-8 h-8 text-white" />
-          </div>
-          <p className="text-white font-medium">Đang tải dữ liệu...</p>
+          <img 
+            src="https://shikoku-taiyo-g.com/wp-content/uploads/2023/03/logo.png" 
+            alt="TaiyoTakamatsu" 
+            className="w-16 h-16 mx-auto rounded-2xl object-contain bg-white p-2 mb-4 animate-pulse"
+          />
+          <p className="text-white font-medium">{t('loading')}</p>
         </div>
       </div>
     );
@@ -113,12 +115,14 @@ function AppContent() {
 
         <div className="p-8 pb-4 relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Package className="text-white w-6 h-6" />
-            </div>
+            <img 
+              src="https://shikoku-taiyo-g.com/wp-content/uploads/2023/03/logo.png" 
+              alt="TaiyoTakamatsu" 
+              className="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-lg"
+            />
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white leading-none">LucRental</h1>
-              <span className="text-[10px] font-bold tracking-widest text-blue-400 uppercase bg-blue-900/30 px-1.5 py-0.5 rounded mt-1 inline-block">Pro System</span>
+              <h1 className="text-xl font-bold tracking-tight text-white leading-none">TaiyoTakamatsu</h1>
+              <span className="text-[10px] font-bold tracking-widest text-orange-400 uppercase bg-orange-900/30 px-1.5 py-0.5 rounded mt-1 inline-block">Rental System</span>
             </div>
           </div>
         </div>
@@ -193,11 +197,13 @@ function AppContent() {
       >
         <div className="md:hidden p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b flex justify-between items-center pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Package className="text-white w-5 h-5" />
-            </div>
+            <img 
+              src="https://shikoku-taiyo-g.com/wp-content/uploads/2023/03/logo.png" 
+              alt="TaiyoTakamatsu" 
+              className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-lg border"
+            />
             <div>
-              <h1 className="font-bold text-slate-800 text-sm leading-tight">LucRental</h1>
+              <h1 className="font-bold text-slate-800 text-sm leading-tight">TaiyoTakamatsu</h1>
               <p className="text-[10px] text-slate-500 font-medium">{db.currentUser?.name}</p>
             </div>
           </div>

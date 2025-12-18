@@ -48,11 +48,13 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
-            <Package className="w-8 h-8 text-white" />
-          </div>
+          <img 
+            src="https://shikoku-taiyo-g.com/wp-content/uploads/2023/03/logo.png" 
+            alt="TaiyoTakamatsu" 
+            className="w-20 h-20 mx-auto rounded-2xl object-contain bg-white p-2 shadow-lg mb-4"
+          />
           <h1 className="text-3xl font-bold text-white">{t('app_name')}</h1>
-          <p className="text-blue-300 mt-2">{t('rental_system')}</p>
+          <p className="text-orange-300 mt-2">{t('rental_system')}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">

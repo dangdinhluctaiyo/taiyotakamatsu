@@ -5,7 +5,7 @@ export type Language = 'vi' | 'ja';
 const translations = {
   vi: {
     // Common
-    app_name: 'LucRental Pro',
+    app_name: 'TaiyoTakamatsu',
     login: 'Đăng nhập',
     logout: 'Đăng xuất',
     save: 'Lưu',
@@ -457,7 +457,7 @@ const translations = {
 
   ja: {
     // Common
-    app_name: 'LucRental Pro',
+    app_name: 'TaiyoTakamatsu',
     login: 'ログイン',
     logout: 'ログアウト',
     save: '保存',
