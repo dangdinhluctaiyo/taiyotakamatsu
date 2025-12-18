@@ -1,250 +1,283 @@
 import React, { useState, useMemo } from 'react';
 import { db } from '../services/db';
-import { t, i18n } from '../services/i18n';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Package, Truck, AlertTriangle, TrendingUp, ShoppingCart, Box, Search } from 'lucide-react';
+import { t } from '../services/i18n';
+import { Package, AlertTriangle, Search, Box, ArrowDownCircle, ArrowUpCircle, Filter, ChevronRight } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const [equipmentSearch, setEquipmentSearch] = useState('');
-  const totalOrders = db.orders.length;
-  const activeOrders = db.orders.filter(o => o.status === 'ACTIVE').length;
-  const bookedOrders = db.orders.filter(o => o.status === 'BOOKED').length;
-  const revenueEstimate = db.orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'available' | 'low' | 'out'>('all');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Calculate inventory stats
+  const inventoryStats = useMemo(() => {
+    let totalItems = 0;
+    let totalAvailable = 0;
+    let totalRenting = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    db.products.forEach(p => {
+      totalItems += p.totalOwned;
+      totalAvailable += p.currentPhysicalStock;
+      totalRenting += (p.totalOwned - p.currentPhysicalStock);
+      if (p.currentPhysicalStock === 0) outOfStockCount++;
+      else if (p.currentPhysicalStock <= 2) lowStockCount++;
+    });
+
+    return { totalItems, totalAvailable, totalRenting, lowStockCount, outOfStockCount };
+  }, [db.products]);
+
+  // Filter and search products
+  const filteredProducts = useMemo(() => {
+    let products = db.products;
+    
+    // Apply filter
+    if (filter === 'available') {
+      products = products.filter(p => p.currentPhysicalStock > 2);
+    } else if (filter === 'low') {
+      products = products.filter(p => p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2);
+    } else if (filter === 'out') {
+      products = products.filter(p => p.currentPhysicalStock === 0);
+    }
+
+    // Apply search
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      products = products.filter(p => 
+        p.name.toLowerCase().includes(s) || 
+        p.code.toLowerCase().includes(s)
+      );
+    }
+
+    return products;
+  }, [search, filter, db.products]);
+
+  // Overdue orders warning
   const overdueOrders = db.orders.filter(o => {
-    if (o.status !== 'ACTIVE') return false;
+    if (o.status !== 'ACTIVE' && o.status !== 'BOOKED') return false;
     const expectedDate = new Date(o.expectedReturnDate);
-    expectedDate.setHours(0, 0, 0, 0);
     return expectedDate < today;
   });
 
-  const dueSoonOrders = db.orders.filter(o => {
-    if (o.status !== 'ACTIVE') return false;
-    const expectedDate = new Date(o.expectedReturnDate);
-    expectedDate.setHours(0, 0, 0, 0);
-    const daysUntil = Math.ceil((expectedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntil >= 0 && daysUntil <= 1;
-  });
-
-  const getNext7Days = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      days.push(d.toISOString().split('T')[0]);
-    }
-    return days;
-  };
-
-  const chartData = getNext7Days().map(date => {
-    const productsToCheck = db.products.slice(0, 3);
-    let totalUsed = 0, totalAvail = 0;
-    productsToCheck.forEach(p => {
-      const avail = db.checkAvailability(p.id, date, date);
-      totalAvail += avail;
-      totalUsed += (p.totalOwned - avail);
-    });
-    return { date: date.slice(5), Used: totalUsed, Available: totalAvail };
-  });
-
-  // Filter products for equipment overview
-  const filteredProducts = useMemo(() => {
-    if (!equipmentSearch.trim()) return db.products;
-    const search = equipmentSearch.toLowerCase();
-    return db.products.filter(p => 
-      p.name.toLowerCase().includes(search) || 
-      p.code.toLowerCase().includes(search) ||
-      p.category?.toLowerCase().includes(search)
-    );
-  }, [equipmentSearch, db.products]);
-
   return (
-    <div className="p-3 md:p-8 space-y-4 md:space-y-6 max-w-7xl mx-auto">
-      {/* Mobile Header */}
-      <div className="md:hidden">
-        <h1 className="text-xl font-bold text-slate-800">{t('nav_dashboard')}</h1>
-        <p className="text-sm text-slate-500">{t('dashboard_welcome')}, {db.currentUser?.name}</p>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="hidden md:block">
-        <h1 className="text-3xl font-bold text-slate-800">{t('dashboard_title')}</h1>
-        <p className="text-slate-500 mt-1">{t('dashboard_welcome')}, {db.currentUser?.name}</p>
-      </div>
-
-      {/* Warning Banners - Compact on mobile */}
-      {overdueOrders.length > 0 && (
-        <div className="bg-red-100 border border-red-300 p-3 rounded-xl flex items-center gap-3">
-          <div className="p-2 bg-red-500 rounded-lg shrink-0">
-            <AlertTriangle className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-red-700 text-sm">{overdueOrders.length} {t('overdue_warning')}</p>
-          </div>
-        </div>
-      )}
-
-      {dueSoonOrders.length > 0 && (
-        <div className="bg-orange-100 border border-orange-300 p-3 rounded-xl flex items-center gap-3">
-          <div className="p-2 bg-orange-500 rounded-lg shrink-0">
-            <AlertTriangle className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-orange-700 text-sm">{dueSoonOrders.length} {t('due_soon_warning')}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Equipment Overview - Moved to top */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
-          <h3 className="font-bold text-slate-800">{t('equipment_overview') || 'Tổng quan thiết bị'}</h3>
-          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            {/* Search box */}
-            <div className="relative flex-1 md:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder={t('search_equipment')}
-                value={equipmentSearch}
-                onChange={(e) => setEquipmentSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none"
-              />
+    <div className="min-h-screen bg-slate-50">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white px-4 pt-4 pb-20 md:px-8 md:pt-8 md:pb-24">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-blue-200 text-sm">{t('dashboard_welcome')}</p>
+          <h1 className="text-2xl md:text-3xl font-bold mt-1">{db.currentUser?.name}</h1>
+          
+          {/* Warning banner */}
+          {overdueOrders.length > 0 && (
+            <div className="mt-4 bg-red-500/20 backdrop-blur border border-red-400/30 rounded-xl p-3 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-300 shrink-0" />
+              <p className="text-sm font-medium">{overdueOrders.length} đơn hàng quá hạn cần xử lý</p>
             </div>
-            <div className="flex gap-2 text-xs items-center">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> {t('available')}</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> {t('renting')}</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> {t('low_stock')}</span>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-2 max-h-80 overflow-y-auto">
-          {filteredProducts.length === 0 ? (
-            <p className="text-slate-400 text-center py-6 text-sm">{equipmentSearch ? (t('no_product_found') || 'Không tìm thấy') : t('no_data')}</p>
-          ) : (
-            filteredProducts.slice(0, 15).map(product => {
-              const onRent = product.totalOwned - product.currentPhysicalStock;
-              const availablePercent = (product.currentPhysicalStock / product.totalOwned) * 100;
-              const onRentPercent = (onRent / product.totalOwned) * 100;
-              const isLowStock = product.currentPhysicalStock < 3;
-              
-              return (
-                <div key={product.id} className="p-3 rounded-lg hover:bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <img src={product.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-slate-100" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-800 text-sm truncate">{product.name}</p>
-                        {isLowStock && (
-                          <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded">
-                            {t('low_stock')}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400">{product.code} • {product.category}</p>
-                      
-                      {/* Progress bar */}
-                      <div className="mt-2 w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                        <div 
-                          className="h-full bg-green-500" 
-                          style={{ width: `${availablePercent}%` }}
-                          title={`${t('available')}: ${product.currentPhysicalStock}`}
-                        ></div>
-                        <div 
-                          className="h-full bg-blue-500" 
-                          style={{ width: `${onRentPercent}%` }}
-                          title={`${t('renting')}: ${onRent}`}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1">
-                        <span className={`text-lg font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
-                          {product.currentPhysicalStock}
-                        </span>
-                        <span className="text-slate-400 text-xs">/ {product.totalOwned}</span>
-                      </div>
-                      <p className="text-xs text-blue-600">{onRent > 0 ? `${onRent} ${t('renting')}` : t('available')}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
           )}
         </div>
       </div>
 
-      {/* KPI Cards - 2x2 on mobile, 4 cols on desktop */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <MiniKPI title={t('total_orders')} value={totalOrders} icon={<ShoppingCart />} color="blue" />
-        <MiniKPI title={t('active_orders')} value={activeOrders} icon={<Truck />} color="green" />
-        <MiniKPI title={t('booked_orders')} value={bookedOrders} icon={<Package />} color="orange" />
-        <MiniKPI title={t('overdue_orders')} value={overdueOrders.length} icon={<AlertTriangle />} color="red" />
-      </div>
+      {/* Main content - overlapping header */}
+      <div className="px-4 md:px-8 -mt-14 md:-mt-16 pb-24 md:pb-8">
+        <div className="max-w-6xl mx-auto space-y-4">
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard 
+              label="Tổng thiết bị" 
+              value={db.products.length}
+              subValue={`${inventoryStats.totalItems} đơn vị`}
+              icon={<Package className="w-5 h-5" />}
+              color="blue"
+            />
+            <StatCard 
+              label="Đang cho thuê" 
+              value={inventoryStats.totalRenting}
+              subValue={`${db.orders.filter(o => o.status === 'ACTIVE').length} đơn`}
+              icon={<ArrowUpCircle className="w-5 h-5" />}
+              color="green"
+            />
+            <StatCard 
+              label="Sẵn sàng" 
+              value={inventoryStats.totalAvailable}
+              subValue="trong kho"
+              icon={<ArrowDownCircle className="w-5 h-5" />}
+              color="indigo"
+            />
+            <StatCard 
+              label="Cần chú ý" 
+              value={inventoryStats.lowStockCount + inventoryStats.outOfStockCount}
+              subValue={`${inventoryStats.outOfStockCount} hết hàng`}
+              icon={<AlertTriangle className="w-5 h-5" />}
+              color="orange"
+              alert={inventoryStats.outOfStockCount > 0}
+            />
+          </div>
 
-      {/* Chart - Scrollable on mobile */}
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border overflow-hidden">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-slate-800">{t('capacity_forecast')}</h3>
-          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">{t('top_equipment')}</span>
-        </div>
-        <div className="h-48 md:h-64 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="min-w-[500px] h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barSize={16}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} width={30} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }} />
-                <Bar dataKey="Used" stackId="a" fill="#3b82f6" name={t('booked')} radius={[0, 0, 4, 4]} />
-                <Bar dataKey="Available" stackId="a" fill="#e2e8f0" name={t('available')} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+          {/* Inventory List */}
+          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+            {/* Search and Filter */}
+            <div className="p-4 border-b bg-slate-50/50">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm thiết bị theo tên hoặc mã..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+                  <FilterBtn active={filter === 'all'} onClick={() => setFilter('all')} label="Tất cả" count={db.products.length} />
+                  <FilterBtn active={filter === 'available'} onClick={() => setFilter('available')} label="Sẵn sàng" color="green" />
+                  <FilterBtn active={filter === 'low'} onClick={() => setFilter('low')} label="Sắp hết" color="orange" />
+                  <FilterBtn active={filter === 'out'} onClick={() => setFilter('out')} label="Hết hàng" color="red" />
+                </div>
+              </div>
+            </div>
 
-      {/* Quick Stats for Mobile */}
-      <div className="md:hidden grid grid-cols-2 gap-3">
-        <div className="bg-white p-3 rounded-xl border">
-          <div className="flex items-center gap-2 mb-1">
-            <Box className="w-4 h-4 text-slate-400" />
-            <span className="text-xs text-slate-500">{t('equipment')}</span>
+            {/* Product List */}
+            <div className="divide-y max-h-[60vh] overflow-y-auto">
+              {filteredProducts.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Box className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm">Không tìm thấy thiết bị</p>
+                </div>
+              ) : (
+                filteredProducts.map(product => {
+                  const onRent = product.totalOwned - product.currentPhysicalStock;
+                  const availPercent = (product.currentPhysicalStock / product.totalOwned) * 100;
+                  const isOut = product.currentPhysicalStock === 0;
+                  const isLow = product.currentPhysicalStock > 0 && product.currentPhysicalStock <= 2;
+                  
+                  return (
+                    <div key={product.id} className="p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        {/* Product Image */}
+                        <div className="relative shrink-0">
+                          <img 
+                            src={product.imageUrl} 
+                            alt="" 
+                            className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover bg-slate-100"
+                          />
+                          {(isOut || isLow) && (
+                            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isOut ? 'bg-red-500' : 'bg-orange-500'}`} />
+                          )}
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
+                              <p className="text-xs text-slate-400 mt-0.5">{product.code}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="flex items-baseline gap-1">
+                                <span className={`text-xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
+                                  {product.currentPhysicalStock}
+                                </span>
+                                <span className="text-slate-400 text-sm">/{product.totalOwned}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}
+                                style={{ width: `${availPercent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-slate-500 whitespace-nowrap">
+                              {onRent > 0 ? `${onRent} đang thuê` : 'Sẵn sàng'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            {filteredProducts.length > 0 && (
+              <div className="p-3 bg-slate-50 border-t text-center">
+                <p className="text-xs text-slate-500">
+                  Hiển thị {filteredProducts.length} / {db.products.length} thiết bị
+                </p>
+              </div>
+            )}
           </div>
-          <p className="text-xl font-bold text-slate-800">{db.products.length}</p>
-        </div>
-        <div className="bg-white p-3 rounded-xl border">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-slate-400" />
-            <span className="text-xs text-slate-500">{t('transactions')}</span>
-          </div>
-          <p className="text-xl font-bold text-slate-800">{db.logs.length}</p>
         </div>
       </div>
     </div>
   );
 };
 
-const MiniKPI = ({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) => {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-500',
+// Stat Card Component
+const StatCard = ({ label, value, subValue, icon, color, alert }: {
+  label: string;
+  value: number;
+  subValue: string;
+  icon: React.ReactNode;
+  color: 'blue' | 'green' | 'indigo' | 'orange';
+  alert?: boolean;
+}) => {
+  const colors = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    indigo: 'from-indigo-500 to-indigo-600',
+    orange: 'from-orange-500 to-orange-600'
+  };
+
+  return (
+    <div className={`bg-white rounded-2xl p-4 shadow-sm border relative overflow-hidden ${alert ? 'ring-2 ring-orange-500/50' : ''}`}>
+      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${colors[color]} opacity-10 rounded-bl-[60px]`} />
+      <div className={`inline-flex p-2 rounded-xl bg-gradient-to-br ${colors[color]} text-white mb-3`}>
+        {icon}
+      </div>
+      <p className="text-2xl md:text-3xl font-bold text-slate-800">{value}</p>
+      <p className="text-xs text-slate-500 mt-1">{label}</p>
+      <p className="text-[10px] text-slate-400">{subValue}</p>
+    </div>
+  );
+};
+
+// Filter Button Component
+const FilterBtn = ({ active, onClick, label, count, color }: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+  color?: 'green' | 'orange' | 'red';
+}) => {
+  const dotColors = {
     green: 'bg-green-500',
     orange: 'bg-orange-500',
     red: 'bg-red-500'
   };
 
   return (
-    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`p-1.5 md:p-2 rounded-lg ${colors[color]} text-white`}>
-          {React.cloneElement(icon as React.ReactElement, { className: 'w-4 h-4 md:w-5 md:h-5' })}
-        </div>
-      </div>
-      <p className="text-2xl md:text-3xl font-bold text-slate-800">{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{title}</p>
-    </div>
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+        active 
+          ? 'bg-blue-600 text-white shadow-sm' 
+          : 'bg-white text-slate-600 border hover:bg-slate-50'
+      }`}
+    >
+      {color && <span className={`w-2 h-2 rounded-full ${active ? 'bg-white' : dotColors[color]}`} />}
+      {label}
+      {count !== undefined && (
+        <span className={`text-xs ${active ? 'text-blue-200' : 'text-slate-400'}`}>({count})</span>
+      )}
+    </button>
   );
 };
