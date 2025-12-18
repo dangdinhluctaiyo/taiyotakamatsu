@@ -11,8 +11,9 @@ import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { Scanner } from './components/Scanner';
 import { CategoryManager } from './components/CategoryManager';
 import { InventoryHistory } from './components/InventoryHistory';
+import { QRGenerator } from './components/QRGenerator';
 
-import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen, QrCode } from 'lucide-react';
 import { db } from './services/db';
 import { Order, OrderStatus } from './types';
 import { t } from './services/i18n';
@@ -29,7 +30,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES'>('DASHBOARD');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR'>('DASHBOARD');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -140,6 +141,7 @@ function AppContent() {
               <nav className="space-y-1 relative z-10">
                 <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers') || 'Khách hàng'} />
                 <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
+                <NavButton active={view === 'QR_GENERATOR'} onClick={() => setView('QR_GENERATOR')} icon={<QrCode />} label={t('nav_qr_generator') || 'Tạo QR'} />
                 <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
               </nav>
             </div>
@@ -429,6 +431,8 @@ function AppContent() {
           {view === 'HISTORY' && <InventoryHistory refreshApp={refreshApp} />}
 
           {view === 'CATEGORIES' && <CategoryManager refreshApp={refreshApp} />}
+
+          {view === 'QR_GENERATOR' && <QRGenerator refreshApp={refreshApp} />}
         </div>
       </main>
 

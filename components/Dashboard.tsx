@@ -73,7 +73,7 @@ export const Dashboard: React.FC = () => {
           {overdueOrders.length > 0 && (
             <div className="mt-4 bg-red-500/20 backdrop-blur border border-red-400/30 rounded-xl p-3 flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-red-300 shrink-0" />
-              <p className="text-sm font-medium">{overdueOrders.length} đơn hàng quá hạn cần xử lý</p>
+              <p className="text-sm font-medium">{overdueOrders.length} {t('orders_overdue')}</p>
             </div>
           )}
         </div>
@@ -86,30 +86,30 @@ export const Dashboard: React.FC = () => {
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard 
-              label="Tổng thiết bị" 
+              label={t('total_equipment')} 
               value={db.products.length}
-              subValue={`${inventoryStats.totalItems} đơn vị`}
+              subValue={`${inventoryStats.totalItems} ${t('total_units')}`}
               icon={<Package className="w-5 h-5" />}
               color="blue"
             />
             <StatCard 
-              label="Đang cho thuê" 
+              label={t('on_rent') || 'Đang cho thuê'} 
               value={inventoryStats.totalRenting}
-              subValue={`${db.orders.filter(o => o.status === 'ACTIVE').length} đơn`}
+              subValue={`${db.orders.filter(o => o.status === 'ACTIVE').length} ${t('active_orders_count') || 'đơn'}`}
               icon={<ArrowUpCircle className="w-5 h-5" />}
               color="green"
             />
             <StatCard 
-              label="Sẵn sàng" 
+              label={t('available')} 
               value={inventoryStats.totalAvailable}
-              subValue="trong kho"
+              subValue={t('ready_in_stock') || 'trong kho'}
               icon={<ArrowDownCircle className="w-5 h-5" />}
               color="indigo"
             />
             <StatCard 
-              label="Cần chú ý" 
+              label={t('need_attention') || 'Cần chú ý'} 
               value={inventoryStats.lowStockCount + inventoryStats.outOfStockCount}
-              subValue={`${inventoryStats.outOfStockCount} hết hàng`}
+              subValue={`${inventoryStats.outOfStockCount} ${t('out_of_stock_count') || 'hết hàng'}`}
               icon={<AlertTriangle className="w-5 h-5" />}
               color="orange"
               alert={inventoryStats.outOfStockCount > 0}
@@ -125,17 +125,17 @@ export const Dashboard: React.FC = () => {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Tìm thiết bị theo tên hoặc mã..."
+                    placeholder={t('search_by_name_code') || 'Tìm thiết bị theo tên hoặc mã...'}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-                  <FilterBtn active={filter === 'all'} onClick={() => setFilter('all')} label="Tất cả" count={db.products.length} />
-                  <FilterBtn active={filter === 'available'} onClick={() => setFilter('available')} label="Sẵn sàng" color="green" />
-                  <FilterBtn active={filter === 'low'} onClick={() => setFilter('low')} label="Sắp hết" color="orange" />
-                  <FilterBtn active={filter === 'out'} onClick={() => setFilter('out')} label="Hết hàng" color="red" />
+                  <FilterBtn active={filter === 'all'} onClick={() => setFilter('all')} label={t('filter_all') || 'Tất cả'} count={db.products.length} />
+                  <FilterBtn active={filter === 'available'} onClick={() => setFilter('available')} label={t('filter_available') || 'Sẵn sàng'} color="green" />
+                  <FilterBtn active={filter === 'low'} onClick={() => setFilter('low')} label={t('filter_low') || 'Sắp hết'} color="orange" />
+                  <FilterBtn active={filter === 'out'} onClick={() => setFilter('out')} label={t('filter_out') || 'Hết hàng'} color="red" />
                 </div>
               </div>
             </div>
@@ -145,7 +145,7 @@ export const Dashboard: React.FC = () => {
               {filteredProducts.length === 0 ? (
                 <div className="p-8 text-center">
                   <Box className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                  <p className="text-slate-500 text-sm">Không tìm thấy thiết bị</p>
+                  <p className="text-slate-500 text-sm">{t('no_equipment_found') || 'Không tìm thấy thiết bị'}</p>
                 </div>
               ) : (
                 filteredProducts.map(product => {
@@ -195,7 +195,7 @@ export const Dashboard: React.FC = () => {
                               />
                             </div>
                             <span className="text-xs text-slate-500 whitespace-nowrap">
-                              {onRent > 0 ? `${onRent} đang thuê` : 'Sẵn sàng'}
+                              {onRent > 0 ? `${onRent} ${t('renting')}` : t('available')}
                             </span>
                           </div>
                         </div>
@@ -210,7 +210,7 @@ export const Dashboard: React.FC = () => {
             {filteredProducts.length > 0 && (
               <div className="p-3 bg-slate-50 border-t text-center">
                 <p className="text-xs text-slate-500">
-                  Hiển thị {filteredProducts.length} / {db.products.length} thiết bị
+                  {t('showing_count')?.replace('{0}', String(filteredProducts.length)).replace('{1}', String(db.products.length)) || `Hiển thị ${filteredProducts.length} / ${db.products.length} thiết bị`}
                 </p>
               </div>
             )}
