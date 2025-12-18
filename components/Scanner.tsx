@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Product } from '../types';
-import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User } from 'lucide-react';
+import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown } from 'lucide-react';
 
 declare const Html5QrcodeScanner: any;
 
@@ -15,15 +15,12 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
   const [showCamera, setShowCamera] = useState(false);
   const [note, setNote] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [showOrderSelect, setShowOrderSelect] = useState(false);
   const scannerRef = useRef<any>(null);
 
-  // Lấy thông tin nhân viên đang đăng nhập
   const currentStaff = db.currentUser;
-
-  // Lấy danh sách đơn hàng đang hoạt động (BOOKED hoặc ACTIVE)
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
 
-  // Khi chọn đơn hàng, tự động điền ghi chú
   useEffect(() => {
     if (selectedOrderId) {
       const order = db.orders.find(o => o.id === selectedOrderId);
@@ -97,7 +94,6 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
       return;
     }
 
-    // Giảm tồn kho và ghi log
     scannedProduct.currentPhysicalStock -= quantity;
     db.logs.push({
       id: Math.floor(Math.random() * 100000),
@@ -112,10 +108,9 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     });
     (db as any).save?.();
 
-    setFeedback({ type: 'success', msg: `✓ ${t('export_stock')} ${quantity} ${scannedProduct.name}\n${t('staff_label')}: ${currentStaff?.name}` });
+    setFeedback({ type: 'success', msg: `Xuất kho ${quantity} ${scannedProduct.name}` });
     refreshApp();
 
-    // Reset sau 2s
     setTimeout(() => {
       setScannedProduct(null);
       setQuantity(1);
@@ -128,7 +123,6 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
   const handleImport = () => {
     if (!scannedProduct || quantity <= 0) return;
 
-    // Tăng tồn kho và ghi log
     scannedProduct.currentPhysicalStock += quantity;
     db.logs.push({
       id: Math.floor(Math.random() * 100000),
@@ -143,7 +137,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     });
     (db as any).save?.();
 
-    setFeedback({ type: 'success', msg: `✓ ${t('import_stock')} ${quantity} ${scannedProduct.name}\n${t('staff_label')}: ${currentStaff?.name}` });
+    setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
     refreshApp();
 
     setTimeout(() => {
@@ -155,231 +149,363 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     }, 1500);
   };
 
-  return (
-    <div className="p-4 max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Scan className="w-6 h-6" /> {t('scanner_title')}
-      </h2>
+  // Product Detail View - Modern Design
+  if (scannedProduct && !feedback?.type) {
+    const availPercent = (scannedProduct.currentPhysicalStock / scannedProduct.totalOwned) * 100;
+    const onRent = scannedProduct.totalOwned - scannedProduct.currentPhysicalStock;
+    const isLow = scannedProduct.currentPhysicalStock <= 2;
+    const isOut = scannedProduct.currentPhysicalStock === 0;
 
-      {/* Camera */}
-      {!scannedProduct && (
-        <div className="mb-4">
-          {!showCamera ? (
-            <button
-              onClick={() => setShowCamera(true)}
-              className="w-full bg-slate-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-slate-700"
-            >
-              <Camera className="w-6 h-6" /> {t('open_camera')}
-            </button>
-          ) : (
-            <div className="bg-black rounded-xl overflow-hidden shadow-lg relative">
-              <div id="reader" className="w-full"></div>
-              <button
-                onClick={() => setShowCamera(false)}
-                className="absolute top-2 right-2 bg-white/20 text-white p-2 rounded-full hover:bg-red-500"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="bg-white p-4 rounded-xl shadow mb-4">
-        <div className="flex gap-2 relative">
-          <input
-            type="text"
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={t('enter_product')}
-            className="flex-1 border p-3 rounded-lg pl-10 focus:ring-2 focus:ring-primary outline-none"
+    return (
+      <div className="min-h-screen bg-slate-100">
+        {/* Header with Product Image */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent z-10" />
+          <img 
+            src={scannedProduct.imageUrl} 
+            alt={scannedProduct.name}
+            className="w-full h-56 md:h-72 object-cover"
           />
-          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" />
           <button
-            onClick={() => handleSearch()}
-            className="bg-primary text-white px-6 rounded-lg font-medium hover:bg-blue-700"
+            onClick={() => setScannedProduct(null)}
+            className="absolute top-4 left-4 z-20 bg-white/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-white/30 transition-all"
           >
-            {t('find')}
+            <X className="w-5 h-5" />
           </button>
-        </div>
-      </div>
-
-      {/* Feedback */}
-      {feedback && (
-        <div className={`p-4 mb-4 rounded-xl flex items-center gap-2 text-lg font-bold ${feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-          }`}>
-          {feedback.type === 'success' && <CheckCircle className="w-6 h-6" />}
-          {feedback.msg}
-        </div>
-      )}
-
-      {/* Search Results */}
-      {searchResults.length > 0 && (
-        <div className="bg-white rounded-xl shadow mb-4 overflow-hidden">
-          <div className="p-3 bg-gray-50 border-b font-medium">{t('select_product')} ({searchResults.length})</div>
-          <div className="divide-y max-h-60 overflow-y-auto">
-            {searchResults.map(p => (
-              <button
-                key={p.id}
-                onClick={() => selectProduct(p)}
-                className="w-full text-left p-3 hover:bg-blue-50 flex items-center gap-3"
-              >
-                <img src={p.imageUrl} className="w-12 h-12 object-cover rounded bg-gray-200" />
-                <div className="flex-1">
-                  <div className="font-bold">{p.name}</div>
-                  <div className="text-sm text-gray-500">{p.code}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-400">{t('in_stock')}</div>
-                  <div className="font-bold text-lg">{p.currentPhysicalStock}</div>
-                </div>
-              </button>
-            ))}
+          
+          {/* Product Badge */}
+          <div className="absolute bottom-4 left-4 right-4 z-20">
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="inline-block px-2 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-medium rounded-lg mb-2">
+                  {scannedProduct.code}
+                </span>
+                <h1 className="text-2xl font-bold text-white drop-shadow-lg">{scannedProduct.name}</h1>
+              </div>
+              <div className={`px-3 py-1.5 rounded-xl text-sm font-bold ${isOut ? 'bg-red-500 text-white' : isLow ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}`}>
+                {isOut ? 'Hết hàng' : isLow ? 'Sắp hết' : 'Còn hàng'}
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Selected Product */}
-      {scannedProduct && !feedback?.type && (
-        <div className="bg-white rounded-xl shadow overflow-hidden border-2 border-blue-500">
-          {/* Product Info */}
-          <div className="p-4 bg-blue-50 flex gap-4 items-center">
-            <img src={scannedProduct.imageUrl} className="w-20 h-20 object-cover rounded-lg shadow" />
-            <div className="flex-1">
-              <h3 className="font-bold text-lg">{scannedProduct.name}</h3>
-              <p className="text-gray-500 font-mono text-sm">{scannedProduct.code}</p>
+        {/* Content */}
+        <div className="px-4 -mt-4 relative z-30 pb-32">
+          {/* Stock Card */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-slate-500">Tồn kho hiện tại</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className={`text-4xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
+                    {scannedProduct.currentPhysicalStock}
+                  </span>
+                  <span className="text-slate-400">/ {scannedProduct.totalOwned}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-500">Đang cho thuê</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{onRent}</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500">{t('in_stock')}</div>
-              <div className="text-3xl font-bold text-primary">{scannedProduct.currentPhysicalStock}</div>
+            
+            {/* Progress Bar */}
+            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all rounded-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}
+                style={{ width: `${availPercent}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-xs text-slate-400">
+              <span>Sẵn sàng: {scannedProduct.currentPhysicalStock}</span>
+              <span>Đang thuê: {onRent}</span>
             </div>
           </div>
 
-          {/* Quantity */}
-          <div className="p-4 border-t">
-            <label className="block text-sm font-medium mb-2">{t('quantity')}</label>
-            <div className="flex items-center gap-3">
+          {/* Quantity Selector */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
+            <label className="text-sm font-medium text-slate-700 mb-3 block">Số lượng</label>
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-12 h-12 bg-gray-100 rounded-lg font-bold text-xl hover:bg-gray-200"
+                className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
               >
-                -
+                <Minus className="w-6 h-6 text-slate-600" />
               </button>
-              <input
-                type="number"
-                className="flex-1 border-2 p-3 rounded-lg text-center font-bold text-2xl"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                min={1}
-              />
+              <div className="flex-1 relative">
+                <input
+                  type="number"
+                  className="w-full text-center text-3xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                  min={1}
+                />
+              </div>
               <button
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-12 h-12 bg-gray-100 rounded-lg font-bold text-xl hover:bg-gray-200"
+                className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
               >
-                +
+                <Plus className="w-6 h-6 text-slate-600" />
               </button>
             </div>
-          </div>
-
-          {/* Link to Order (optional) */}
-          <div className="px-4 pb-2">
-            <label className="block text-sm font-medium mb-1 text-gray-600">
-              <FileText className="w-4 h-4 inline mr-1" /> {t('link_order_optional')}
-            </label>
-            <select
-              value={selectedOrderId || ''}
-              onChange={(e) => setSelectedOrderId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full border p-2 rounded-lg text-sm bg-white"
-            >
-              <option value="">{t('no_link_order')}</option>
-              {activeOrders.map(o => {
-                const customer = db.customers.find(c => c.id === o.customerId);
-                return (
-                  <option key={o.id} value={o.id}>
-                    #{o.id} - {customer?.name} ({o.status === 'ACTIVE' ? t('renting_status') : t('booked_status')})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {/* Current Staff Info */}
-          <div className="px-4 pb-2">
-            <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg">
-              <User className="w-4 h-4 text-blue-600" />
-              <span className="text-sm text-blue-700">{t('staff_info')}: <strong>{currentStaff?.name}</strong></span>
+            
+            {/* Quick quantity buttons */}
+            <div className="flex gap-2 mt-3">
+              {[1, 5, 10, 20].map(n => (
+                <button
+                  key={n}
+                  onClick={() => setQuantity(n)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${quantity === n ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  {n}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Note */}
-          <div className="px-4 pb-4">
-            <label className="block text-sm font-medium mb-1 text-gray-600">
-              <FileText className="w-4 h-4 inline mr-1" /> {t('note')}
-            </label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('note_placeholder')}
-              className="w-full border p-2 rounded-lg text-sm"
-            />
-          </div>
+          {/* Order Link & Note */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 space-y-4">
+            {/* Order Select */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
+                <FileText className="w-4 h-4" /> Liên kết đơn hàng
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowOrderSelect(!showOrderSelect)}
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl text-left flex items-center justify-between hover:border-slate-300 transition-all"
+                >
+                  <span className={selectedOrderId ? 'text-slate-800' : 'text-slate-400'}>
+                    {selectedOrderId 
+                      ? `#${selectedOrderId} - ${db.customers.find(c => c.id === db.orders.find(o => o.id === selectedOrderId)?.customerId)?.name}`
+                      : 'Không liên kết đơn hàng'
+                    }
+                  </span>
+                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showOrderSelect ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showOrderSelect && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => { setSelectedOrderId(null); setShowOrderSelect(false); }}
+                      className="w-full p-3 text-left hover:bg-slate-50 text-slate-500"
+                    >
+                      Không liên kết
+                    </button>
+                    {activeOrders.map(o => {
+                      const customer = db.customers.find(c => c.id === o.customerId);
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => { setSelectedOrderId(o.id); setShowOrderSelect(false); }}
+                          className="w-full p-3 text-left hover:bg-blue-50 flex items-center justify-between"
+                        >
+                          <span>#{o.id} - {customer?.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${o.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {o.status === 'ACTIVE' ? 'Đang thuê' : 'Đã đặt'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-0 border-t">
+            {/* Note */}
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">Ghi chú</label>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Nhập ghi chú (tùy chọn)"
+                className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+              />
+            </div>
+
+            {/* Staff Info */}
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-600">Thực hiện bởi</p>
+                <p className="font-semibold text-blue-800">{currentStaff?.name}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fixed Action Buttons */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-40">
+          <div className="max-w-lg mx-auto grid grid-cols-2 gap-3">
             <button
               onClick={handleImport}
-              className="py-5 bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:bg-green-600 active:bg-green-700"
+              className="py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 active:scale-[0.98] transition-all"
             >
-              <ArrowDownCircle className="w-6 h-6" /> {t('import_btn')}
+              <ArrowDownCircle className="w-5 h-5" /> Nhập kho
             </button>
             <button
               onClick={handleExport}
               disabled={quantity > scannedProduct.currentPhysicalStock}
-              className="py-5 bg-red-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:bg-red-600 active:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              <ArrowUpCircle className="w-6 h-6" /> {t('export_btn')}
+              <ArrowUpCircle className="w-5 h-5" /> Xuất kho
             </button>
           </div>
-
-          {/* Cancel */}
-          <button
-            onClick={() => setScannedProduct(null)}
-            className="w-full py-3 text-gray-500 hover:bg-gray-50 text-sm"
-          >
-            ← {t('select_other')}
-          </button>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Quick Stock Overview */}
-      {!scannedProduct && !showCamera && (
-        <div className="mt-6">
-          <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-            <Package className="w-5 h-5" /> {t('current_stock_label')}
-          </h3>
-          <div className="bg-white rounded-xl shadow divide-y max-h-80 overflow-y-auto">
-            {db.products.map(p => (
-              <div
-                key={p.id}
-                onClick={() => selectProduct(p)}
-                className="p-3 flex items-center gap-3 hover:bg-blue-50 cursor-pointer"
-              >
-                <img src={p.imageUrl} className="w-10 h-10 object-cover rounded" />
-                <div className="flex-1">
-                  <div className="font-medium">{p.name}</div>
-                  <div className="text-xs text-gray-400">{p.code}</div>
-                </div>
-                <div className={`font-bold text-lg ${p.currentPhysicalStock <= 0 ? 'text-red-500' : 'text-green-600'}`}>
-                  {p.currentPhysicalStock}
-                </div>
-              </div>
-            ))}
+  // Main Scanner View
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white px-4 pt-4 pb-8 md:px-8">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-white/10 rounded-xl">
+              <Scan className="w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-bold">{t('scanner_title')}</h1>
           </div>
+          <p className="text-slate-400 text-sm">Quét mã hoặc tìm kiếm để nhập/xuất kho</p>
         </div>
-      )}
+      </div>
+
+      <div className="px-4 -mt-4 pb-24 md:pb-8">
+        <div className="max-w-lg mx-auto space-y-4">
+          
+          {/* Camera Button / Scanner */}
+          {!showCamera ? (
+            <button
+              onClick={() => setShowCamera(true)}
+              className="w-full bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 hover:shadow-xl transition-all group"
+            >
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                <Camera className="w-7 h-7 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-slate-800">{t('open_camera')}</p>
+                <p className="text-sm text-slate-500">Quét mã QR hoặc barcode</p>
+              </div>
+            </button>
+          ) : (
+            <div className="bg-black rounded-2xl overflow-hidden shadow-xl relative">
+              <div id="reader" className="w-full"></div>
+              <button
+                onClick={() => setShowCamera(false)}
+                className="absolute top-3 right-3 bg-white/20 backdrop-blur text-white p-2 rounded-full hover:bg-red-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Search Box */}
+          <div className="bg-white p-4 rounded-2xl shadow-lg">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder={t('enter_product')}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
+                />
+              </div>
+              <button
+                onClick={() => handleSearch()}
+                className="px-6 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                {t('find')}
+              </button>
+            </div>
+          </div>
+
+          {/* Feedback */}
+          {feedback && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 ${feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              {feedback.type === 'success' ? <CheckCircle className="w-6 h-6 shrink-0" /> : <AlertCircle className="w-6 h-6 shrink-0" />}
+              <p className="font-medium">{feedback.msg}</p>
+            </div>
+          )}
+
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b">
+                <p className="font-medium text-slate-700">Chọn sản phẩm ({searchResults.length})</p>
+              </div>
+              <div className="divide-y max-h-64 overflow-y-auto">
+                {searchResults.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => selectProduct(p)}
+                    className="w-full p-4 flex items-center gap-4 hover:bg-blue-50 transition-colors"
+                  >
+                    <img src={p.imageUrl} className="w-14 h-14 object-cover rounded-xl bg-slate-100" />
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-slate-800">{p.name}</p>
+                      <p className="text-sm text-slate-500">{p.code}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">Tồn kho</p>
+                      <p className={`text-xl font-bold ${p.currentPhysicalStock <= 0 ? 'text-red-500' : 'text-green-600'}`}>
+                        {p.currentPhysicalStock}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Stock List */}
+          {!showCamera && searchResults.length === 0 && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-slate-500" />
+                  <p className="font-medium text-slate-700">Thiết bị trong kho</p>
+                </div>
+                <span className="text-sm text-slate-400">{db.products.length} sản phẩm</span>
+              </div>
+              <div className="divide-y max-h-80 overflow-y-auto">
+                {db.products.map(p => {
+                  const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
+                  const isOut = p.currentPhysicalStock === 0;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => selectProduct(p)}
+                      className="w-full p-4 flex items-center gap-4 hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="relative">
+                        <img src={p.imageUrl} className="w-12 h-12 object-cover rounded-xl bg-slate-100" />
+                        {(isOut || isLow) && (
+                          <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isOut ? 'bg-red-500' : 'bg-orange-500'}`} />
+                        )}
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-medium text-slate-800 truncate">{p.name}</p>
+                        <p className="text-xs text-slate-400">{p.code}</p>
+                      </div>
+                      <div className={`text-xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
+                        {p.currentPhysicalStock}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
