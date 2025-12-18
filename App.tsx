@@ -9,8 +9,10 @@ import { InventoryForecast } from './components/InventoryForecast';
 import { CustomerManager } from './components/CustomerManager';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { Scanner } from './components/Scanner';
+import { CategoryManager } from './components/CategoryManager';
+import { InventoryHistory } from './components/InventoryHistory';
 
-import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen } from 'lucide-react';
 import { db } from './services/db';
 import { Order, OrderStatus } from './types';
 import { t } from './services/i18n';
@@ -27,7 +29,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER'>('DASHBOARD');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES'>('DASHBOARD');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -127,6 +129,7 @@ function AppContent() {
             <NavButton active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} count={db.orders.filter(o => o.status === 'ACTIVE').length} />
             <NavButton active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
             <NavButton active={view === 'FORECAST'} onClick={() => setView('FORECAST')} icon={<TrendingUp />} label={t('nav_forecast')} />
+            <NavButton active={view === 'HISTORY'} onClick={() => setView('HISTORY')} icon={<History />} label={t('nav_history')} />
             <NavButton active={view === 'SCANNER'} onClick={() => setView('SCANNER')} icon={<ScanLine />} label={t('nav_scanner')} isSpecial />
           </nav>
 
@@ -136,6 +139,7 @@ function AppContent() {
               <p className="text-xs font-bold text-slate-500 uppercase px-4 mb-2 tracking-wider">Admin</p>
               <nav className="space-y-1 relative z-10">
                 <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers') || 'Khách hàng'} />
+                <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
                 <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
               </nav>
             </div>
@@ -174,7 +178,7 @@ function AppContent() {
         <MobileNavBtn active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} />
         <MobileNavBtn active={view === 'SCANNER'} onClick={() => setView('SCANNER')} icon={<ScanLine />} isMain label={t('nav_scanner')} />
         <MobileNavBtn active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
-        <MobileNavBtn active={view === 'FORECAST'} onClick={() => setView('FORECAST')} icon={<TrendingUp />} label={t('nav_forecast')} />
+        <MobileNavBtn active={view === 'HISTORY'} onClick={() => setView('HISTORY')} icon={<History />} label={t('nav_history')} />
       </div>
 
       <main
@@ -421,6 +425,10 @@ function AppContent() {
           {view === 'CUSTOMERS' && <CustomerManager refreshApp={refreshApp} />}
 
           {view === 'SCANNER' && <Scanner refreshApp={refreshApp} />}
+
+          {view === 'HISTORY' && <InventoryHistory refreshApp={refreshApp} />}
+
+          {view === 'CATEGORIES' && <CategoryManager refreshApp={refreshApp} />}
         </div>
       </main>
 
