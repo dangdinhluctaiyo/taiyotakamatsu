@@ -333,7 +333,7 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
   );
 };
 
-// QR Card Component
+// QR Card Component - Modern Design
 const QRCard: React.FC<{
   product: Product;
   size: 'small' | 'medium' | 'large';
@@ -342,45 +342,56 @@ const QRCard: React.FC<{
   showCode: boolean;
 }> = ({ product, size, showImage, showName, showCode }) => {
   const sizes = {
-    small: { qr: 80, width: 'w-32', text: 'text-xs', img: 'w-8 h-8' },
-    medium: { qr: 120, width: 'w-44', text: 'text-sm', img: 'w-10 h-10' },
-    large: { qr: 160, width: 'w-56', text: 'text-base', img: 'w-12 h-12' }
+    small: { qr: 70, cardW: 'w-40', imgSize: 50, padding: 'p-2', gap: 'gap-2', nameText: 'text-[11px]', codeText: 'text-[9px]' },
+    medium: { qr: 90, cardW: 'w-52', imgSize: 70, padding: 'p-3', gap: 'gap-3', nameText: 'text-xs', codeText: 'text-[10px]' },
+    large: { qr: 120, cardW: 'w-64', imgSize: 90, padding: 'p-4', gap: 'gap-4', nameText: 'text-sm', codeText: 'text-xs' }
   };
 
   const s = sizes[size];
   const qrUrl = generateQRCode(product.code, s.qr);
 
   return (
-    <div className={`${s.width} bg-white border-2 border-slate-200 rounded-xl p-3 flex flex-col items-center print:border print:rounded-lg print:p-2`}>
-      {/* Product Image */}
-      {showImage && (
-        <img
-          src={product.imageUrl}
-          alt=""
-          className={`${s.img} rounded-lg object-cover mb-2`}
-        />
-      )}
+    <div className={`${s.cardW} bg-white border border-slate-200 rounded-xl ${s.padding} shadow-sm print:shadow-none print:border-slate-300`}>
+      {/* Top: Image + QR side by side */}
+      <div className={`flex items-center justify-center ${s.gap}`}>
+        {/* Product Image */}
+        {showImage && (
+          <div 
+            className="rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200"
+            style={{ width: s.imgSize, height: s.imgSize }}
+          >
+            <img
+              src={product.imageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        
+        {/* QR Code */}
+        <div className="bg-white p-1 rounded-lg border border-slate-100">
+          <img
+            src={qrUrl}
+            alt={`QR: ${product.code}`}
+            style={{ width: s.qr, height: s.qr }}
+          />
+        </div>
+      </div>
       
-      {/* QR Code */}
-      <img
-        src={qrUrl}
-        alt={`QR: ${product.code}`}
-        className="mb-2"
-        style={{ width: s.qr, height: s.qr }}
-      />
-      
-      {/* Product Name */}
-      {showName && (
-        <p className={`${s.text} font-semibold text-slate-800 text-center truncate w-full`}>
-          {product.name}
-        </p>
-      )}
-      
-      {/* Product Code */}
-      {showCode && (
-        <p className={`${size === 'small' ? 'text-[10px]' : 'text-xs'} text-slate-500 font-mono`}>
-          {product.code}
-        </p>
+      {/* Bottom: Product Info */}
+      {(showName || showCode) && (
+        <div className="mt-2 pt-2 border-t border-slate-100 text-center">
+          {showName && (
+            <p className={`${s.nameText} font-bold text-slate-800 truncate leading-tight`}>
+              {product.name}
+            </p>
+          )}
+          {showCode && (
+            <p className={`${s.codeText} text-slate-500 font-mono mt-0.5 bg-slate-50 inline-block px-2 py-0.5 rounded`}>
+              {product.code}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
