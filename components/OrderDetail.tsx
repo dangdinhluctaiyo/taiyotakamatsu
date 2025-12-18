@@ -172,7 +172,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
 
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           {/* Info Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-3 gap-3 text-sm">
             <div className="bg-slate-50 p-3 rounded-lg">
               <p className="text-slate-500 text-xs">{t('start_date')}</p>
               <p className="font-bold">{new Date(order.rentalStartDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
@@ -184,10 +184,6 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
             <div className="bg-slate-50 p-3 rounded-lg">
               <p className="text-slate-500 text-xs">{t('num_days')}</p>
               <p className="font-bold">{expectedDays} {t('days')}</p>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-slate-500 text-xs">{t('total_amount')}</p>
-              <p className="font-bold text-blue-600">{expectedAmount.toLocaleString()}{t('vnd')}</p>
             </div>
           </div>
 
@@ -234,6 +230,16 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                   const remaining = exported - item.returnedQuantity;
                   const isFullyReturned = item.returnedQuantity >= item.quantity;
 
+                  // Calculate Prepared (Reserved)
+                  // We don't have direct access to reservedQty for this specific item in the order object
+                  // But we can infer it if we assume reservedQty in stock corresponds to this order?
+                  // No, reservedQty is global.
+                  // Ideally, we should track 'preparedQuantity' in order_items.
+                  // But for now, let's just show "Waiting" or "Exported".
+                  // Actually, we can check if the item is serialized and has serials assigned?
+                  // Or we can just rely on the fact that if it's not exported, it's "Booked" or "Prepared".
+                  // Let's just show "Booked" if 0 exported.
+
                   return (
                     <tr key={item.itemId} className={isFullyReturned ? 'bg-green-50' : ''}>
                       <td className="p-3">
@@ -252,8 +258,10 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                           </span>
                         ) : remaining > 0 ? (
                           <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                            {t('remaining_qty')} {remaining}
+                            {t('renting')} {remaining}
                           </span>
+                        ) : exported === 0 ? (
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{t('booked')}</span>
                         ) : (
                           <span className="text-xs text-slate-400">{t('waiting')}</span>
                         )}
@@ -289,21 +297,10 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
             </table>
           </div>
 
-          {/* Summary */}
-          {order.status === OrderStatus.ACTIVE && currentActualAmount !== expectedAmount && (
-            <div className="bg-orange-50 p-3 rounded-lg flex justify-between items-center">
-              <span className="text-sm text-orange-700">{t('actual_amount')} ({actualDays} {t('days')})</span>
-              <span className="font-bold text-orange-700">{currentActualAmount.toLocaleString()}{t('vnd')}</span>
-            </div>
-          )}
-
-          {order.status === OrderStatus.COMPLETED && (
+          {/* Completed info */}
+          {order.status === OrderStatus.COMPLETED && order.completedBy && (
             <div className="bg-green-50 p-3 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-green-700">{t('paid')}</span>
-                <span className="font-bold text-green-700 text-lg">{(order.finalAmount || expectedAmount).toLocaleString()}{t('vnd')}</span>
-              </div>
-              {order.completedBy && <p className="text-xs text-green-600 mt-1">{t('confirmed_by')}: {order.completedBy}</p>}
+              <p className="text-sm text-green-600">{t('confirmed_by')}: {order.completedBy}</p>
             </div>
           )}
         </div>
@@ -323,9 +320,6 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
         <Modal title={t('complete_order_title')} onClose={() => setShowCompleteConfirm(false)}>
           <div className="bg-blue-50 p-3 rounded-lg mb-4">
             <div className="flex justify-between text-sm"><span>{t('num_days')}:</span><span className="font-bold">{actualDays}</span></div>
-            <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-blue-200">
-              <span>{t('total_label')}:</span><span className="text-blue-700">{currentActualAmount.toLocaleString()}{t('vnd')}</span>
-            </div>
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">{t('staff_confirm')} *</label>

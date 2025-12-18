@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Customer, Product, OrderItem, OrderStatus } from '../types';
-import { Plus, Trash2, AlertCircle, UserPlus, Package, X } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, UserPlus, Package, X, Search } from 'lucide-react';
 import { useToast } from './Toast';
 
 export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void }> = ({ onClose, refreshApp }) => {
@@ -34,6 +34,33 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
   // Custom items (not in inventory)
   const [customItems, setCustomItems] = useState<{ name: string; pricePerDay: number; quantity: number; supplierId?: number; note?: string }[]>([]);
 
+  // Product search autocomplete
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const productSearchRef = useRef<HTMLDivElement>(null);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return db.products.filter(p => p.id > 0);
+    const search = productSearch.toLowerCase();
+    return db.products.filter(p => 
+      p.id > 0 && (
+        p.name.toLowerCase().includes(search) || 
+        p.code.toLowerCase().includes(search)
+      )
+    );
+  }, [productSearch, db.products]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (productSearchRef.current && !productSearchRef.current.contains(e.target as Node)) {
+        setShowProductDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Calculate Duration and Total Amount
   useEffect(() => {
     if (dates.start && dates.end) {
@@ -59,10 +86,16 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
   }, [dates, selectedItems, customItems]);
 
   useEffect(() => {
-    if (tempProduct && dates.start && dates.end) {
-      const avail = db.checkAvailability(tempProduct.id, dates.start, dates.end);
-      setAvailableQty(avail);
-    }
+    const checkStock = async () => {
+      if (tempProduct && dates.start && dates.end) {
+        // Use async check
+        const res = await db.checkAvailabilityAsync([{ productId: tempProduct.id, quantity: 1 }], dates.start, dates.end);
+        if (res && res.length > 0) {
+          setAvailableQty(res[0].available);
+        }
+      }
+    };
+    checkStock();
   }, [tempProduct, dates, tempQty]);
 
   const handleAddCustomer = async () => {
@@ -145,7 +178,8 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
         pricePerDay: ci.pricePerDay,
         totalOwned: 0,
         currentPhysicalStock: 0,
-        imageUrl: 'https://via.placeholder.com/150?text=External'
+        imageUrl: 'https://via.placeholder.com/150?text=External',
+        isSerialized: false
       });
 
       allItems.push({
@@ -233,17 +267,74 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
             </div>
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex flex-col gap-3">
-                <select
-                  className="w-full border p-2 rounded"
-                  onChange={(e) => {
-                    const p = db.products.find(x => x.id === Number(e.target.value));
-                    setTempProduct(p || null);
-                  }}
-                  value={tempProduct?.id || ''}
-                >
-                  <option value="">{t('select_product_placeholder')}</option>
-                  {db.products.filter(p => p.id > 0).map(p => <option key={p.id} value={p.id}>{p.code} - {p.name} ({p.pricePerDay.toLocaleString()}{t('vnd')}{t('per_day')})</option>)}
-                </select>
+                {/* Product Search Autocomplete */}
+                <div ref={productSearchRef} className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      className="w-full border p-2 pl-9 rounded focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder={t('search_product_placeholder') || 'Gõ tên hoặc mã sản phẩm...'}
+                      value={tempProduct ? `${tempProduct.code} - ${tempProduct.name}` : productSearch}
+                      onChange={(e) => {
+                        setProductSearch(e.target.value);
+                        setTempProduct(null);
+                        setShowProductDropdown(true);
+                      }}
+                      onFocus={() => setShowProductDropdown(true)}
+                    />
+                    {tempProduct && (
+                      <button
+                        onClick={() => {
+                          setTempProduct(null);
+                          setProductSearch('');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full"
+                      >
+                        <X className="w-4 h-4 text-gray-500" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Dropdown suggestions */}
+                  {showProductDropdown && !tempProduct && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredProducts.length === 0 ? (
+                        <div className="p-3 text-gray-500 text-center text-sm">
+                          {t('no_product_found') || 'Không tìm thấy sản phẩm'}
+                        </div>
+                      ) : (
+                        filteredProducts.slice(0, 10).map(p => (
+                          <div
+                            key={p.id}
+                            className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 flex items-center gap-3"
+                            onClick={() => {
+                              setTempProduct(p);
+                              setProductSearch('');
+                              setShowProductDropdown(false);
+                            }}
+                          >
+                            {p.imageUrl && (
+                              <img src={p.imageUrl} alt="" className="w-10 h-10 rounded object-cover bg-gray-100" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-800 truncate">{p.name}</div>
+                              <div className="text-xs text-gray-500 flex items-center gap-2">
+                                <span className="font-mono bg-gray-100 px-1 rounded">{p.code}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-sm font-bold ${p.currentPhysicalStock < 3 ? 'text-red-500' : 'text-green-600'}`}>
+                                {p.currentPhysicalStock}
+                              </span>
+                              <div className="text-xs text-gray-400">{t('in_stock')}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {tempProduct && dates.start && dates.end && (
                   <div className="animate-fade-in">
@@ -333,14 +424,9 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                       </div>
                       {item.note && <div className="text-xs text-blue-600 mt-1 italic">📝 {item.note}</div>}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-gray-600">
-                        {((p?.pricePerDay || 0) * item.quantity).toLocaleString()}{t('vnd')}{t('per_day')}
-                      </span>
-                      <button onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 p-2">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <button onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 p-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               );
@@ -360,14 +446,9 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                     </div>
                     {item.note && <div className="text-xs text-purple-600 mt-1 italic">📝 {item.note}</div>}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-gray-600">
-                      {(item.pricePerDay * item.quantity).toLocaleString()}{t('vnd')}{t('per_day')}
-                    </span>
-                    <button onClick={() => setCustomItems(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 p-2">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button onClick={() => setCustomItems(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 p-2">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -380,21 +461,16 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
           </div>
         </div>
 
-        {/* Footer with Total */}
-        <div className="p-4 md:p-6 border-t bg-gray-50 md:rounded-b-xl flex flex-col md:flex-row justify-between items-center gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="text-lg">
-            {t('estimated_total')}: <span className="font-bold text-primary text-xl">{estimatedTotal.toLocaleString()} {t('vnd')}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
-            <button onClick={onClose} className="px-4 py-3 md:py-2 text-gray-600 font-medium bg-white border rounded-lg active:bg-gray-50">{t('cancel')}</button>
-            <button
-              onClick={handleSubmit}
-              disabled={selectedItems.length === 0 && customItems.length === 0}
-              className="px-6 py-3 md:py-2 bg-primary text-white rounded-lg font-bold shadow hover:bg-blue-700 disabled:opacity-50 active:scale-95 transition-transform"
-            >
-              {t('save_order')}
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="p-4 md:p-6 border-t bg-gray-50 md:rounded-b-xl flex justify-end gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <button onClick={onClose} className="px-4 py-3 md:py-2 text-gray-600 font-medium bg-white border rounded-lg active:bg-gray-50">{t('cancel')}</button>
+          <button
+            onClick={handleSubmit}
+            disabled={selectedItems.length === 0 && customItems.length === 0}
+            className="px-6 py-3 md:py-2 bg-primary text-white rounded-lg font-bold shadow hover:bg-blue-700 disabled:opacity-50 active:scale-95 transition-transform"
+          >
+            {t('save_order')}
+          </button>
         </div>
       </div>
 
@@ -458,26 +534,15 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                   placeholder={t('placeholder_product_name')}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('price_per_day')}</label>
-                  <input
-                    type="number"
-                    className="w-full border p-2 rounded"
-                    value={newProduct.pricePerDay}
-                    onChange={e => setNewProduct({ ...newProduct, pricePerDay: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('quantity')}</label>
-                  <input
-                    type="number"
-                    className="w-full border p-2 rounded"
-                    value={newProduct.quantity}
-                    onChange={e => setNewProduct({ ...newProduct, quantity: Number(e.target.value) })}
-                    min={1}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('quantity')}</label>
+                <input
+                  type="number"
+                  className="w-full border p-2 rounded"
+                  value={newProduct.quantity}
+                  onChange={e => setNewProduct({ ...newProduct, quantity: Number(e.target.value) })}
+                  min={1}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('supplier_optional')}</label>

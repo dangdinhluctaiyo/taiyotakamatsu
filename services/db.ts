@@ -191,6 +191,7 @@ export class MockDB {
   }
 
   checkAvailability(productId: number, start: string, end: string): number {
+    // Legacy sync method, returns local calculation based on loaded orders
     const product = this.products.find((p) => p.id === productId);
     if (!product) return 0;
 
@@ -210,6 +211,19 @@ export class MockDB {
       }, 0);
 
     return Math.max(0, product.totalOwned - busyQuantity);
+  }
+
+  async checkAvailabilityAsync(items: { productId: number; quantity: number }[], start: string, end: string): Promise<{ productId: number; available: number; isEnough: boolean }[]> {
+    try {
+      const res = await fetchAPI<{ productId: number; available: number; isEnough: boolean }[]>('/api/orders/check-availability', {
+        method: 'POST',
+        body: JSON.stringify({ items, rentalStartDate: start, expectedReturnDate: end }),
+      });
+      return res;
+    } catch (e) {
+      console.error('Failed to check availability:', e);
+      return items.map(i => ({ productId: i.productId, available: 0, isEnough: false }));
+    }
   }
 
   getForecastStockForDate(productId: number, date: string) {
@@ -427,57 +441,18 @@ export class MockDB {
     }
   }
 
-  forceCompleteOrder(orderId: number, staffName?: string) {
-    const order = this.orders.find((o) => o.id === orderId);
-    if (!order) return;
+  async forceCompleteOrder(orderId: number, staffName?: string) {
+    try {
+      await fetchAPI(`/api/orders/${orderId}/complete`, {
+        method: 'POST',
+        body: JSON.stringify({ staffName }),
+      });
 
-    const now = new Date().toISOString();
-
-    order.items.forEach((item) => {
-      const product = this.products.find((p) => p.id === item.productId);
-      if (product && !item.isExternal) {
-        const outstanding = (item.exportedQuantity || 0) - item.returnedQuantity;
-        if (outstanding > 0) {
-          product.currentPhysicalStock += outstanding;
-          item.returnedQuantity += outstanding;
-          item.returnedAt = now;
-          item.returnedBy = staffName || 'System';
-
-          const log: InventoryLog = {
-            id: generateId(),
-            productId: item.productId,
-            orderId: order.id,
-            actionType: 'IMPORT',
-            quantity: outstanding,
-            timestamp: now,
-            note: `Auto Restock - NV: \${staffName || 'System'}`,
-          };
-          this.logs.push(log);
-
-          fetchAPI('/api/logs', {
-            method: 'POST',
-            body: JSON.stringify(log),
-          }).catch(console.error);
-        }
-      }
-    });
-
-    order.status = OrderStatus.COMPLETED;
-    order.actualReturnDate = now;
-    order.completedBy = staffName;
-
-    const start = new Date(order.rentalStartDate);
-    const end = new Date(now);
-    const actualDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    order.finalAmount = order.items.reduce((sum, item) => {
-      const product = this.products.find((p) => p.id === item.productId);
-      return sum + (product?.pricePerDay || 0) * item.quantity * actualDays;
-    }, 0);
-
-    fetchAPI(`/api/orders/\${orderId}`, {
-      method: 'PUT',
-      body: JSON.stringify(order),
-    }).catch(console.error);
+      // Refresh data to get updated status and stock
+      await this.refresh();
+    } catch (e) {
+      console.error('Failed to force complete order:', e);
+    }
   }
 
   updateLog(logId: number, updates: Partial<InventoryLog>) {
@@ -519,7 +494,66 @@ export class MockDB {
 
   deleteStaff(staffId: number) {
     this.staff = this.staff.filter((s) => s.id !== staffId);
-    fetchAPI(`/api/staff/\${staffId}`, { method: 'DELETE' }).catch(console.error);
+    fetchAPI(`/api/staff/${staffId}`, { method: 'DELETE' }).catch(console.error);
+  }
+
+  async getWarehouseTasks() {
+    try {
+      return await fetchAPI<{ toPrepare: any[]; toClean: any[] }>('/api/warehouse/tasks');
+    } catch (e) {
+      console.error('Failed to fetch warehouse tasks:', e);
+      return { toPrepare: [], toClean: [] };
+    }
+  }
+
+  async cleanItems(productId: number, warehouseId: number, quantity: number) {
+    await fetchAPI('/api/warehouse/clean', {
+      method: 'POST',
+      body: JSON.stringify({ productId, warehouseId, quantity }),
+    });
+  }
+
+  async prepareOrder(orderId: number, productId: number, serialIds: number[], quantity?: number) {
+    await fetchAPI('/api/warehouse/prepare', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, productId, serialIds, quantity }),
+    });
+  }
+
+  async shipOrder(orderId: number, items: { itemId: string, quantity: number, productId: number }[]) {
+    await fetchAPI('/api/warehouse/ship', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, items }),
+    });
+  }
+
+  async returnOrder(orderId: number, items: { itemId: string, quantity: number, productId: number }[]) {
+    await fetchAPI('/api/warehouse/return', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, items }),
+    });
+  }
+
+  async getSerials(productId: number) {
+    try {
+      return await fetchAPI<any[]>(`/api/products/${productId}/serials`);
+    } catch (e) {
+      console.error('Failed to fetch serials:', e);
+      return [];
+    }
+  }
+
+  async addSerial(productId: number, serialNumber: string, warehouseId: number) {
+    await fetchAPI(`/api/products/${productId}/serials`, {
+      method: 'POST',
+      body: JSON.stringify({ serialNumber, warehouseId }),
+    });
+  }
+
+  async deleteSerial(productId: number, serialId: number) {
+    await fetchAPI(`/api/products/${productId}/serials/${serialId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

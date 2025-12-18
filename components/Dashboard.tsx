@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { db } from '../services/db';
 import { t, i18n } from '../services/i18n';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Package, Truck, AlertTriangle, TrendingUp, ShoppingCart, Box } from 'lucide-react';
+import { Package, Truck, AlertTriangle, TrendingUp, ShoppingCart, Box, Search } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
+  const [equipmentSearch, setEquipmentSearch] = useState('');
   const totalOrders = db.orders.length;
   const activeOrders = db.orders.filter(o => o.status === 'ACTIVE').length;
   const bookedOrders = db.orders.filter(o => o.status === 'BOOKED').length;
@@ -49,6 +50,17 @@ export const Dashboard: React.FC = () => {
     return { date: date.slice(5), Used: totalUsed, Available: totalAvail };
   });
 
+  // Filter products for equipment overview
+  const filteredProducts = useMemo(() => {
+    if (!equipmentSearch.trim()) return db.products;
+    const search = equipmentSearch.toLowerCase();
+    return db.products.filter(p => 
+      p.name.toLowerCase().includes(search) || 
+      p.code.toLowerCase().includes(search) ||
+      p.category?.toLowerCase().includes(search)
+    );
+  }, [equipmentSearch, db.products]);
+
   return (
     <div className="p-3 md:p-8 space-y-4 md:space-y-6 max-w-7xl mx-auto">
       {/* Mobile Header */}
@@ -58,15 +70,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden md:flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">{t('dashboard_title')}</h1>
-          <p className="text-slate-500 mt-1">{t('dashboard_welcome')}, {db.currentUser?.name}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-slate-500">{t('revenue_estimate')}</p>
-          <p className="text-2xl font-bold text-primary">{revenueEstimate.toLocaleString()}{t('vnd')}</p>
-        </div>
+      <div className="hidden md:block">
+        <h1 className="text-3xl font-bold text-slate-800">{t('dashboard_title')}</h1>
+        <p className="text-slate-500 mt-1">{t('dashboard_welcome')}, {db.currentUser?.name}</p>
       </div>
 
       {/* Warning Banners - Compact on mobile */}
@@ -92,18 +98,91 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Equipment Overview - Moved to top */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
+          <h3 className="font-bold text-slate-800">{t('equipment_overview') || 'Tổng quan thiết bị'}</h3>
+          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+            {/* Search box */}
+            <div className="relative flex-1 md:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder={t('search_equipment')}
+                value={equipmentSearch}
+                onChange={(e) => setEquipmentSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none"
+              />
+            </div>
+            <div className="flex gap-2 text-xs items-center">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> {t('available')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> {t('renting')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> {t('low_stock')}</span>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {filteredProducts.length === 0 ? (
+            <p className="text-slate-400 text-center py-6 text-sm">{equipmentSearch ? (t('no_product_found') || 'Không tìm thấy') : t('no_data')}</p>
+          ) : (
+            filteredProducts.slice(0, 15).map(product => {
+              const onRent = product.totalOwned - product.currentPhysicalStock;
+              const availablePercent = (product.currentPhysicalStock / product.totalOwned) * 100;
+              const onRentPercent = (onRent / product.totalOwned) * 100;
+              const isLowStock = product.currentPhysicalStock < 3;
+              
+              return (
+                <div key={product.id} className="p-3 rounded-lg hover:bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <img src={product.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-slate-100" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-slate-800 text-sm truncate">{product.name}</p>
+                        {isLowStock && (
+                          <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded">
+                            {t('low_stock')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400">{product.code} • {product.category}</p>
+                      
+                      {/* Progress bar */}
+                      <div className="mt-2 w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                        <div 
+                          className="h-full bg-green-500" 
+                          style={{ width: `${availablePercent}%` }}
+                          title={`${t('available')}: ${product.currentPhysicalStock}`}
+                        ></div>
+                        <div 
+                          className="h-full bg-blue-500" 
+                          style={{ width: `${onRentPercent}%` }}
+                          title={`${t('renting')}: ${onRent}`}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="flex items-baseline gap-1">
+                        <span className={`text-lg font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
+                          {product.currentPhysicalStock}
+                        </span>
+                        <span className="text-slate-400 text-xs">/ {product.totalOwned}</span>
+                      </div>
+                      <p className="text-xs text-blue-600">{onRent > 0 ? `${onRent} ${t('renting')}` : t('available')}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
       {/* KPI Cards - 2x2 on mobile, 4 cols on desktop */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <MiniKPI title={t('total_orders')} value={totalOrders} icon={<ShoppingCart />} color="blue" />
         <MiniKPI title={t('active_orders')} value={activeOrders} icon={<Truck />} color="green" />
         <MiniKPI title={t('booked_orders')} value={bookedOrders} icon={<Package />} color="orange" />
         <MiniKPI title={t('overdue_orders')} value={overdueOrders.length} icon={<AlertTriangle />} color="red" />
-      </div>
-
-      {/* Mobile Revenue Card */}
-      <div className="md:hidden bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-xl text-white">
-        <p className="text-blue-100 text-sm">{t('revenue_estimate')}</p>
-        <p className="text-2xl font-bold">{revenueEstimate.toLocaleString()}{t('vnd')}</p>
       </div>
 
       {/* Chart - Scrollable on mobile */}
@@ -125,39 +204,6 @@ export const Dashboard: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Orders - Compact list */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border">
-        <h3 className="font-bold text-slate-800 mb-3">{t('recent_orders')}</h3>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {db.orders.length === 0 ? (
-            <p className="text-slate-400 text-center py-6 text-sm">{t('no_orders')}</p>
-          ) : (
-            db.orders.slice().reverse().slice(0, 5).map(order => {
-              const customer = db.customers.find(c => c.id === order.customerId);
-              return (
-                <div key={order.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${order.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                    order.status === 'BOOKED' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                    #{order.id}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-sm truncate">{customer?.name}</p>
-                    <p className="text-xs text-slate-400">{new Date(order.rentalStartDate).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-700">{order.totalAmount.toLocaleString()}</p>
-                    <p className={`text-[10px] font-medium ${order.status === 'ACTIVE' ? 'text-green-600' :
-                      order.status === 'BOOKED' ? 'text-orange-600' : 'text-slate-400'
-                      }`}>{order.status}</p>
-                  </div>
-                </div>
-              );
-            })
-          )}
         </div>
       </div>
 

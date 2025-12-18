@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { db } from '../services/db';
 import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
-import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, AlertCircle, LayoutGrid, List as ListIcon, Box, Calendar, DollarSign, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link } from 'lucide-react';
+import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, AlertCircle, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link } from 'lucide-react';
 import { useToast } from './Toast';
 
 export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
@@ -70,7 +70,8 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       pricePerDay: Number(formData.pricePerDay), totalOwned: Number(formData.totalOwned),
       currentPhysicalStock: editingProduct ? editingProduct.currentPhysicalStock : Number(formData.totalOwned),
       imageUrl: formData.imageUrl || formData.images?.[0] || 'https://via.placeholder.com/150',
-      images: formData.images || [], location: formData.location || '', specs: formData.specs || ''
+      images: formData.images || [], location: formData.location || '', specs: formData.specs || '',
+      isSerialized: editingProduct ? editingProduct.isSerialized : false
     };
     await db.saveProduct(productToSave);
     refreshApp();
@@ -184,15 +185,22 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   <div className="mt-auto space-y-3">
                     <div>
                       <div className="flex justify-between text-xs font-medium mb-1">
-                        <span className={isLow ? 'text-red-600' : 'text-slate-600'}>{t('at_warehouse')}: {p.currentPhysicalStock}</span>
+                        <span className="text-green-600">{t('available')}: {p.availableQty || 0}</span>
                         <span className="text-slate-400">{t('total_owned')}: {p.totalOwned}</span>
                       </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-500 ${isLow ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${stockPercent}%` }}></div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                        <div className="h-full bg-green-500" style={{ width: `${((p.availableQty || 0) / p.totalOwned) * 100}%` }} title={`Available: ${p.availableQty}`}></div>
+                        <div className="h-full bg-blue-500" style={{ width: `${((p.onRentQty || 0) / p.totalOwned) * 100}%` }} title={`On Rent: ${p.onRentQty}`}></div>
+                        <div className="h-full bg-orange-500" style={{ width: `${((p.dirtyQty || 0) / p.totalOwned) * 100}%` }} title={`Dirty: ${p.dirtyQty}`}></div>
+                        <div className="h-full bg-red-500" style={{ width: `${((p.brokenQty || 0) / p.totalOwned) * 100}%` }} title={`Broken: ${p.brokenQty}`}></div>
+                        <div className="h-full bg-yellow-400" style={{ width: `${((p.reservedQty || 0) / p.totalOwned) * 100}%` }} title={`Reserved: ${p.reservedQty}`}></div>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>{p.onRentQty ? `Rent: ${p.onRentQty}` : ''}</span>
+                        <span>{p.dirtyQty ? `Dirty: ${p.dirtyQty}` : ''}</span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                      <span className="font-bold text-primary">{p.pricePerDay.toLocaleString()}{t('vnd')}</span>
+                    <div className="flex items-center justify-end pt-3 border-t border-slate-50">
                       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                         <IconButton onClick={() => openHistory(p)} icon={<History className="w-4 h-4" />} title={t('view_history')} />
                         <IconButton onClick={() => setShowQRFor(p)} icon={<QrCode className="w-4 h-4" />} title={t('qr_code')} />
@@ -210,7 +218,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
         <div className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-bold">
-              <tr><th className="p-4 w-16">{t('images')}</th><th className="p-4">{t('items')}</th><th className="p-4">{t('location')}</th><th className="p-4 text-center">{t('in_stock')}</th><th className="p-4 text-right">{t('price_per_day')}</th><th className="p-4 text-center">{t('actions')}</th></tr>
+              <tr><th className="p-4 w-16">{t('images')}</th><th className="p-4">{t('items')}</th><th className="p-4">{t('location')}</th><th className="p-4 text-center">{t('in_stock')}</th><th className="p-4 text-center">{t('actions')}</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map(p => {
@@ -238,7 +246,6 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 text-right font-medium text-slate-600">{p.pricePerDay.toLocaleString()}</td>
                     <td className="p-4" onClick={e => e.stopPropagation()}>
                       <div className="flex justify-center gap-2 opacity-60 group-hover:opacity-100">
                         <IconButton onClick={() => openHistory(p)} icon={<History className="w-4 h-4" />} />
@@ -289,7 +296,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 )}
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-xl text-center">
                   <Package className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-blue-600">{viewDetailFor.totalOwned}</p>
@@ -304,11 +311,6 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   <Truck className="w-6 h-6 text-orange-500 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-orange-600">{viewDetailFor.totalOwned - viewDetailFor.currentPhysicalStock}</p>
                   <p className="text-xs text-orange-500 uppercase font-bold">{t('renting')}</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-xl text-center">
-                  <DollarSign className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-purple-600">{viewDetailFor.pricePerDay.toLocaleString()}</p>
-                  <p className="text-xs text-purple-500 uppercase font-bold">{t('vnd_per_day')}</p>
                 </div>
               </div>
 
@@ -407,18 +409,9 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('equipment_name')}</label>
                 <input type="text" className="w-full border border-slate-200 p-2.5 rounded-lg outline-none font-medium" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Ghế Tiffany Vàng" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('price_per_day')}</label>
-                  <div className="relative">
-                    <input type="number" className="w-full border border-slate-200 p-2.5 pl-8 rounded-lg outline-none" value={formData.pricePerDay} onChange={e => setFormData({ ...formData, pricePerDay: Number(e.target.value) })} />
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{t('vnd')}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('total_assets')}</label>
-                  <input type="number" className="w-full border border-slate-200 p-2.5 rounded-lg font-bold text-blue-600 bg-blue-50 outline-none" value={formData.totalOwned} onChange={e => setFormData({ ...formData, totalOwned: Number(e.target.value) })} />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('total_assets')}</label>
+                <input type="number" className="w-full border border-slate-200 p-2.5 rounded-lg font-bold text-blue-600 bg-blue-50 outline-none" value={formData.totalOwned} onChange={e => setFormData({ ...formData, totalOwned: Number(e.target.value) })} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><MapPin className="w-3 h-3 inline" /> {t('location')}</label>
