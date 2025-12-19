@@ -87,66 +87,70 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!scannedProduct || quantity <= 0) return;
     if (quantity > scannedProduct.currentPhysicalStock) {
       setFeedback({ type: 'error', msg: t('not_enough_stock') });
       return;
     }
 
-    scannedProduct.currentPhysicalStock -= quantity;
-    db.logs.push({
-      id: Math.floor(Math.random() * 100000),
-      productId: scannedProduct.id,
-      orderId: selectedOrderId || 0,
-      actionType: 'EXPORT',
-      quantity,
-      timestamp: new Date().toISOString(),
-      note: note || t('export_stock'),
-      staffId: currentStaff?.id,
-      staffName: currentStaff?.name || 'Unknown'
-    });
-    (db as any).save?.();
+    try {
+      console.log('Exporting:', scannedProduct.id, quantity, selectedOrderId);
 
-    setFeedback({ type: 'success', msg: `Xuất kho ${quantity} ${scannedProduct.name}` });
-    refreshApp();
+      if (selectedOrderId) {
+        await db.exportStock(selectedOrderId, scannedProduct.id, quantity, note || t('export_stock'));
+      } else {
+        // Direct update to Supabase
+        const newStock = scannedProduct.currentPhysicalStock - quantity;
+        console.log('Updating stock to:', newStock);
+        await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, note || t('export_stock'));
+      }
 
-    setTimeout(() => {
-      setScannedProduct(null);
-      setQuantity(1);
-      setNote('');
-      setSelectedOrderId(null);
-      setFeedback(null);
-    }, 1500);
+      setFeedback({ type: 'success', msg: `Xuất kho ${quantity} ${scannedProduct.name}` });
+      await refreshApp();
+
+      setTimeout(() => {
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
+        setFeedback(null);
+      }, 1500);
+    } catch (e: any) {
+      console.error('Export error:', e);
+      setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+    }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!scannedProduct || quantity <= 0) return;
 
-    scannedProduct.currentPhysicalStock += quantity;
-    db.logs.push({
-      id: Math.floor(Math.random() * 100000),
-      productId: scannedProduct.id,
-      orderId: selectedOrderId || 0,
-      actionType: 'IMPORT',
-      quantity,
-      timestamp: new Date().toISOString(),
-      note: note || t('import_stock'),
-      staffId: currentStaff?.id,
-      staffName: currentStaff?.name || 'Unknown'
-    });
-    (db as any).save?.();
+    try {
+      console.log('Importing:', scannedProduct.id, quantity, selectedOrderId);
 
-    setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
-    refreshApp();
+      if (selectedOrderId) {
+        await db.importStock(selectedOrderId, scannedProduct.id, quantity, note || t('import_stock'));
+      } else {
+        // Direct update to Supabase
+        const newStock = scannedProduct.currentPhysicalStock + quantity;
+        console.log('Updating stock to:', newStock);
+        await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, note || t('import_stock'));
+      }
 
-    setTimeout(() => {
-      setScannedProduct(null);
-      setQuantity(1);
-      setNote('');
-      setSelectedOrderId(null);
-      setFeedback(null);
-    }, 1500);
+      setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
+      await refreshApp();
+
+      setTimeout(() => {
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
+        setFeedback(null);
+      }, 1500);
+    } catch (e: any) {
+      console.error('Import error:', e);
+      setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+    }
   };
 
   // Product Detail View - Modern Design
@@ -161,8 +165,8 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
         {/* Header with Product Image */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent z-10" />
-          <img 
-            src={scannedProduct.imageUrl} 
+          <img
+            src={scannedProduct.imageUrl}
             alt={scannedProduct.name}
             className="w-full h-56 md:h-72 object-cover"
           />
@@ -172,7 +176,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           >
             <X className="w-5 h-5" />
           </button>
-          
+
           {/* Product Badge */}
           <div className="absolute bottom-4 left-4 right-4 z-20">
             <div className="flex items-end justify-between">
@@ -183,7 +187,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                 <h1 className="text-2xl font-bold text-white drop-shadow-lg">{scannedProduct.name}</h1>
               </div>
               <div className={`px-3 py-1.5 rounded-xl text-sm font-bold ${isOut ? 'bg-red-500 text-white' : isLow ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}`}>
-                {isOut ? 'Hết hàng' : isLow ? 'Sắp hết' : 'Còn hàng'}
+                {isOut ? t('out_of_stock') : isLow ? t('low_stock') : t('available')}
               </div>
             </div>
           </div>
@@ -195,7 +199,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-slate-500">Tồn kho hiện tại</p>
+                <p className="text-sm text-slate-500">{t('current_stock_label')}</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className={`text-4xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
                     {scannedProduct.currentPhysicalStock}
@@ -204,27 +208,42 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-500">Đang cho thuê</p>
+                <p className="text-sm text-slate-500">{t('on_rent')}</p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">{onRent}</p>
               </div>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full transition-all rounded-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}
                 style={{ width: `${availPercent}%` }}
               />
             </div>
             <div className="flex justify-between mt-2 text-xs text-slate-400">
-              <span>Sẵn sàng: {scannedProduct.currentPhysicalStock}</span>
-              <span>Đang thuê: {onRent}</span>
+              <span>{t('available')}: {scannedProduct.currentPhysicalStock}</span>
+              <span>{t('on_rent')}: {onRent}</span>
             </div>
           </div>
 
+          {/* Location Banner - Prominent display for warehouse staff */}
+          {scannedProduct.location && (
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-5 mb-4 text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Box className="w-7 h-7" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-indigo-200 text-sm font-medium">{t('location') || 'Vị trí kho'}</p>
+                  <p className="text-2xl font-bold tracking-wide">{scannedProduct.location}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Quantity Selector */}
           <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
-            <label className="text-sm font-medium text-slate-700 mb-3 block">Số lượng</label>
+            <label className="text-sm font-medium text-slate-700 mb-3 block">{t('quantity')}</label>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -248,7 +267,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                 <Plus className="w-6 h-6 text-slate-600" />
               </button>
             </div>
-            
+
             {/* Quick quantity buttons */}
             <div className="flex gap-2 mt-3">
               {[1, 5, 10, 20].map(n => (
@@ -268,7 +287,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
             {/* Order Select */}
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Liên kết đơn hàng
+                <FileText className="w-4 h-4" /> {t('link_to_order')}
               </label>
               <div className="relative">
                 <button
@@ -276,21 +295,21 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                   className="w-full p-3 border-2 border-slate-200 rounded-xl text-left flex items-center justify-between hover:border-slate-300 transition-all"
                 >
                   <span className={selectedOrderId ? 'text-slate-800' : 'text-slate-400'}>
-                    {selectedOrderId 
+                    {selectedOrderId
                       ? `#${selectedOrderId} - ${db.customers.find(c => c.id === db.orders.find(o => o.id === selectedOrderId)?.customerId)?.name}`
-                      : 'Không liên kết đơn hàng'
+                      : t('no_order_link')
                     }
                   </span>
                   <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showOrderSelect ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {showOrderSelect && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
                     <button
                       onClick={() => { setSelectedOrderId(null); setShowOrderSelect(false); }}
                       className="w-full p-3 text-left hover:bg-slate-50 text-slate-500"
                     >
-                      Không liên kết
+                      {t('no_link')}
                     </button>
                     {activeOrders.map(o => {
                       const customer = db.customers.find(c => c.id === o.customerId);
@@ -302,7 +321,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                         >
                           <span>#{o.id} - {customer?.name}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${o.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {o.status === 'ACTIVE' ? 'Đang thuê' : 'Đã đặt'}
+                            {o.status === 'ACTIVE' ? t('renting_status') : t('booked_status')}
                           </span>
                         </button>
                       );
@@ -314,12 +333,12 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
 
             {/* Note */}
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Ghi chú</label>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">{t('note')}</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Nhập ghi chú (tùy chọn)"
+                placeholder={t('note_placeholder')}
                 className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
               />
             </div>
@@ -330,28 +349,28 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                 <User className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-blue-600">Thực hiện bởi</p>
+                <p className="text-xs text-blue-600">{t('performed_by')}</p>
                 <p className="font-semibold text-blue-800">{currentStaff?.name}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Fixed Action Buttons */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-40">
+        {/* Fixed Action Buttons - above mobile nav */}
+        <div className="fixed bottom-20 md:bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-4 z-40">
           <div className="max-w-lg mx-auto grid grid-cols-2 gap-3">
             <button
               onClick={handleImport}
               className="py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 active:scale-[0.98] transition-all"
             >
-              <ArrowDownCircle className="w-5 h-5" /> Nhập kho
+              <ArrowDownCircle className="w-5 h-5" /> {t('import_to_stock')}
             </button>
             <button
               onClick={handleExport}
               disabled={quantity > scannedProduct.currentPhysicalStock}
               className="py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              <ArrowUpCircle className="w-5 h-5" /> Xuất kho
+              <ArrowUpCircle className="w-5 h-5" /> {t('export_from_stock')}
             </button>
           </div>
         </div>
@@ -371,13 +390,13 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
             </div>
             <h1 className="text-xl font-bold">{t('scanner_title')}</h1>
           </div>
-          <p className="text-slate-400 text-sm">Quét mã hoặc tìm kiếm để nhập/xuất kho</p>
+          <p className="text-slate-400 text-sm">{t('scan_or_search')}</p>
         </div>
       </div>
 
       <div className="px-4 -mt-4 pb-24 md:pb-8">
         <div className="max-w-lg mx-auto space-y-4">
-          
+
           {/* Camera Button / Scanner */}
           {!showCamera ? (
             <button
@@ -389,7 +408,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
               </div>
               <div className="text-left">
                 <p className="font-bold text-slate-800">{t('open_camera')}</p>
-                <p className="text-sm text-slate-500">Quét mã QR hoặc barcode</p>
+                <p className="text-sm text-slate-500">{t('scan_qr_barcode')}</p>
               </div>
             </button>
           ) : (
@@ -439,7 +458,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
           {searchResults.length > 0 && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-4 bg-slate-50 border-b">
-                <p className="font-medium text-slate-700">Chọn sản phẩm ({searchResults.length})</p>
+                <p className="font-medium text-slate-700">{t('select_product_count')} ({searchResults.length})</p>
               </div>
               <div className="divide-y max-h-64 overflow-y-auto">
                 {searchResults.map(p => (
@@ -454,7 +473,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                       <p className="text-sm text-slate-500">{p.code}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-slate-400">Tồn kho</p>
+                      <p className="text-xs text-slate-400">{t('in_stock')}</p>
                       <p className={`text-xl font-bold ${p.currentPhysicalStock <= 0 ? 'text-red-500' : 'text-green-600'}`}>
                         {p.currentPhysicalStock}
                       </p>
@@ -471,9 +490,9 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
               <div className="p-4 bg-slate-50 border-b flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="w-5 h-5 text-slate-500" />
-                  <p className="font-medium text-slate-700">Thiết bị trong kho</p>
+                  <p className="font-medium text-slate-700">{t('equipment_in_stock')}</p>
                 </div>
-                <span className="text-sm text-slate-400">{db.products.length} sản phẩm</span>
+                <span className="text-sm text-slate-400">{db.products.length} {t('products_count')}</span>
               </div>
               <div className="divide-y max-h-80 overflow-y-auto">
                 {db.products.map(p => {
@@ -494,6 +513,7 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                       <div className="flex-1 text-left min-w-0">
                         <p className="font-medium text-slate-800 truncate">{p.name}</p>
                         <p className="text-xs text-slate-400">{p.code}</p>
+                        {p.location && <p className="text-xs text-indigo-500 font-mono">📍 {p.location}</p>}
                       </div>
                       <div className={`text-xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
                         {p.currentPhysicalStock}

@@ -1,18 +1,8 @@
-
 export enum OrderStatus {
-  DRAFT = 'DRAFT',
   BOOKED = 'BOOKED',
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
-}
-
-export enum DeviceStatus {
-  AVAILABLE = 'AVAILABLE',
-  RESERVED = 'RESERVED',
-  ON_RENT = 'ON_RENT',
-  DIRTY = 'DIRTY',
-  BROKEN = 'BROKEN'
 }
 
 export interface Product {
@@ -21,46 +11,13 @@ export interface Product {
   name: string;
   category: string;
   pricePerDay: number;
-  pricePerWeek?: number;
-  pricePerMonth?: number;
-  unit?: string;
-  isSerialized: boolean;
-  totalOwned: number; // Asset count
-  currentPhysicalStock: number; // In warehouse right now
+  totalOwned: number;
+  currentPhysicalStock: number;
   imageUrl: string;
-  images?: string[]; // Multiple images
-  location?: string; // Vị trí kho (VD: Kệ A1, Kho 2)
-  specs?: string; // Thông số kỹ thuật
-  availableQty?: number;
-  reservedQty?: number;
-  onRentQty?: number;
-  dirtyQty?: number;
-  brokenQty?: number;
-}
-
-export interface Warehouse {
-  id: number;
-  name: string;
-  address?: string;
-}
-
-export interface Stock {
-  id: number;
-  productId: number;
-  warehouseId: number;
-  availableQty: number;
-  reservedQty: number;
-  onRentQty: number;
-  dirtyQty: number;
-  brokenQty: number;
-}
-
-export interface DeviceSerial {
-  id: number;
-  productId: number;
-  serialNumber: string;
-  warehouseId: number;
-  status: DeviceStatus;
+  images?: string[];
+  location?: string;
+  specs?: string;
+  isSerialized?: boolean;
 }
 
 export interface Customer {
@@ -81,12 +38,11 @@ export interface OrderItem {
   quantity: number;
   isExternal: boolean;
   supplierId?: number;
-  costPrice?: number;
   exportedQuantity: number;
   returnedQuantity: number;
   returnedAt?: string;
   returnedBy?: string;
-  note?: string; // Ghi chú cho từng sản phẩm
+  note?: string;
 }
 
 export interface Order {
@@ -100,14 +56,14 @@ export interface Order {
   totalAmount: number;
   finalAmount?: number;
   completedBy?: string;
-  note?: string; // Ghi chú chung cho đơn hàng
+  note?: string;
 }
 
 export interface InventoryLog {
   id: number;
   productId: number;
   orderId: number;
-  actionType: 'EXPORT' | 'IMPORT' | 'ADJUST' | 'PREPARE' | 'CLEAN';
+  actionType: 'EXPORT' | 'IMPORT' | 'ADJUST' | 'CLEAN';
   quantity: number;
   timestamp: string;
   note?: string;

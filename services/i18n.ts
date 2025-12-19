@@ -403,7 +403,15 @@ const translations = {
     staff_auth_title: 'Xác thực nhân viên',
     enter_staff_password: 'Nhập mật khẩu nhân viên để xác nhận thao tác',
     equipment_overview: 'Tổng quan thiết bị',
-    
+    to_inspect: 'Cần kiểm tra',
+    warehouse_tasks_desc: 'Quản lý công việc kho hàng',
+    coming_soon: 'Sắp ra mắt',
+    days_left: 'ngày nữa',
+    all_prepared: 'Tất cả đơn hàng đã được chuẩn bị',
+    all_cleaned: 'Tất cả thiết bị đã được vệ sinh',
+    items_count: 'mục',
+    search_order_placeholder: 'Tìm theo tên, ID, SĐT...',
+
     // Dashboard new
     dashboard_current_stock: 'Tồn kho hiện tại',
     on_rent: 'Đang cho thuê',
@@ -420,7 +428,7 @@ const translations = {
     orders_overdue: 'đơn hàng quá hạn cần xử lý',
     total_units: 'đơn vị',
     active_orders_count: 'đơn',
-    
+
     // Scanner new
     scan_or_search: 'Quét mã hoặc tìm kiếm để nhập/xuất kho',
     scan_qr_barcode: 'Quét mã QR hoặc barcode',
@@ -432,7 +440,7 @@ const translations = {
     performed_by: 'Thực hiện bởi',
     import_to_stock: 'Nhập kho',
     export_from_stock: 'Xuất kho',
-    
+
     // QR Generator
     nav_qr_generator: 'Tạo QR',
     qr_generator_title: 'Tạo mã QR hàng loạt',
@@ -855,7 +863,15 @@ const translations = {
     staff_auth_title: 'スタッフ認証',
     enter_staff_password: 'スタッフのパスワードを入力して操作を確認',
     equipment_overview: '機材概要',
-    
+    to_inspect: '点検待ち',
+    warehouse_tasks_desc: '倉庫タスクを管理する',
+    coming_soon: '近日公開',
+    days_left: '日後',
+    all_prepared: 'すべての注文が準備されました',
+    all_cleaned: 'すべての機器がクリーニングされました',
+    items_count: '件',
+    search_order_placeholder: '名前、ID、電話番号で検索...',
+
     // Dashboard new
     dashboard_current_stock: '現在の在庫',
     on_rent: 'レンタル中',
@@ -872,7 +888,7 @@ const translations = {
     orders_overdue: '件の延滞注文があります',
     total_units: '個',
     active_orders_count: '件',
-    
+
     // Scanner new
     scan_or_search: 'スキャンまたは検索して入出庫',
     scan_qr_barcode: 'QRコードまたはバーコードをスキャン',
@@ -884,7 +900,7 @@ const translations = {
     performed_by: '担当者',
     import_to_stock: '入庫',
     export_from_stock: '出庫',
-    
+
     // QR Generator
     nav_qr_generator: 'QR作成',
     qr_generator_title: 'QRコード一括作成',

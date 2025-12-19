@@ -49,7 +49,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="https://shikoku-taiyo-g.com/wp-content/uploads/2023/03/logo.png" 
+            src="https://shikoku-taiyo-g.com/img/logo_header.png" 
             alt="TaiyoTakamatsu" 
             className="w-20 h-20 mx-auto rounded-2xl object-contain bg-white p-2 shadow-lg mb-4"
           />

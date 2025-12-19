@@ -203,9 +203,35 @@ app.put('/api/orders/:id', async (c) => {
     `UPDATE orders SET status=?, expected_return_date=?, actual_return_date=?, 
      total_amount=?, final_amount=?, completed_by=?, note=? WHERE id=?`
   ).bind(
-    data.status, data.expectedReturnDate, data.actualReturnDate || null,
-    data.totalAmount, data.finalAmount || null, data.completedBy || null, data.note || '', id
+    data.status, data.expectedReturnDate || null, data.actualReturnDate || null,
+    data.totalAmount || 0, data.finalAmount || null, data.completedBy || null, data.note || '', id
   ).run();
+  return c.json({ success: true });
+});
+
+// Update order item (exported/returned quantity)
+app.put('/api/orders/:orderId/items/:itemId', async (c) => {
+  const itemId = c.req.param('itemId');
+  const data = await c.req.json();
+  
+  const updates: string[] = [];
+  const values: any[] = [];
+  
+  if (data.exportedQuantity !== undefined) {
+    updates.push('exported_quantity = ?');
+    values.push(data.exportedQuantity);
+  }
+  if (data.returnedQuantity !== undefined) {
+    updates.push('returned_quantity = ?');
+    values.push(data.returnedQuantity);
+  }
+  
+  if (updates.length > 0) {
+    values.push(itemId);
+    await c.env.DB.prepare(`UPDATE order_items SET ${updates.join(', ')} WHERE id = ?`)
+      .bind(...values).run();
+  }
+  
   return c.json({ success: true });
 });
 

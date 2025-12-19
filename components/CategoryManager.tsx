@@ -91,11 +91,12 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
     return db.products.filter(p => p.category === category).length;
   };
 
-  // Get total stock for category
-  const getTotalStock = (category: string) => {
-    return db.products
-      .filter(p => p.category === category)
-      .reduce((sum, p) => sum + p.totalOwned, 0);
+  // Get stock stats for category
+  const getStockStats = (category: string) => {
+    const products = db.products.filter(p => p.category === category);
+    const total = products.reduce((sum, p) => sum + p.totalOwned, 0);
+    const available = products.reduce((sum, p) => sum + p.currentPhysicalStock, 0);
+    return { total, available };
   };
 
   return (
@@ -178,9 +179,13 @@ export const CategoryManager: React.FC<Props> = ({ refreshApp }) => {
                   </div>
                 )}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">{t('total_stock') || 'Tổng tồn kho'}</span>
-                <span className="font-bold text-slate-700">{getTotalStock(category)}</span>
+              <div className="flex justify-between text-sm items-center border-t pt-3">
+                <span className="text-slate-500">{t('filter_available') || 'Sẵn sàng'} / {t('total_label') || 'Tổng'}</span>
+                <div className="font-bold">
+                  <span className="text-green-600">{getStockStats(category).available}</span>
+                  <span className="text-slate-400 mx-1">/</span>
+                  <span className="text-slate-700">{getStockStats(category).total}</span>
+                </div>
               </div>
             </div>
           ))

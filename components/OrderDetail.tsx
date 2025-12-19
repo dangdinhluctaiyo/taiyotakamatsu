@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../services/db';
 import { t, i18n } from '../services/i18n';
 import { Order, OrderStatus, OrderItem } from '../types';
-import { X, CheckCircle2, Plus, Calendar, ArrowDownCircle, Trash2, Clock, AlertCircle, AlertTriangle, User } from 'lucide-react';
+import { X, CheckCircle2, Plus, Calendar, ArrowDownCircle, ArrowUpCircle, Trash2, Clock, AlertCircle, AlertTriangle, User } from 'lucide-react';
 import { useToast } from './Toast';
 
 interface Props {
@@ -18,6 +18,9 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
   const [showPartialReturn, setShowPartialReturn] = useState<OrderItem | null>(null);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showReturnAll, setShowReturnAll] = useState(false);
+  const [showExportItem, setShowExportItem] = useState<OrderItem | null>(null);
+  const [exportQty, setExportQty] = useState(1);
+  const [exportStaffName, setExportStaffName] = useState('');
 
   const [newProductId, setNewProductId] = useState<number | null>(null);
   const [newQty, setNewQty] = useState(1);
@@ -93,16 +96,16 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     refreshApp();
   };
 
-  const handleReturnAll = () => {
+  const handleReturnAll = async () => {
     if (!returnStaffName.trim()) { error(t('please_enter_info')); return; }
-    order.items.forEach(item => {
+    for (const item of order.items) {
       const remaining = (item.exportedQuantity || item.quantity) - item.returnedQuantity;
       if (remaining > 0) {
         item.returnedAt = new Date().toISOString();
         item.returnedBy = returnStaffName;
-        db.importStock(order.id, item.productId, remaining, `${t('return_all_btn')} - ${t('staff_label')}: ${returnStaffName}`);
+        await db.importStock(order.id, item.productId, remaining, `${t('return_all_btn')} - ${t('staff_label')}: ${returnStaffName}`);
       }
-    });
+    }
     setShowReturnAll(false);
     setReturnStaffName('');
     refreshApp();
@@ -116,7 +119,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     refreshApp();
   };
 
-  const handlePartialReturn = () => {
+  const handlePartialReturn = async () => {
     if (!showPartialReturn || returnQty < 1 || !returnStaffName.trim()) {
       if (!returnStaffName.trim()) error(t('please_enter_info'));
       return;
@@ -127,11 +130,34 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     if (returnQty > maxReturn) { error(`${t('remaining_qty')}: ${maxReturn}`); return; }
     item.returnedAt = new Date().toISOString();
     item.returnedBy = returnStaffName;
-    db.importStock(order.id, item.productId, returnQty, `${t('return_partial')} - ${t('staff_label')}: ${returnStaffName}`);
+    await db.importStock(order.id, item.productId, returnQty, `${t('return_partial')} - ${t('staff_label')}: ${returnStaffName}`);
     setShowPartialReturn(null);
     setReturnQty(1);
     setReturnStaffName('');
     refreshApp();
+  };
+
+  const handleExportItem = async () => {
+    if (!showExportItem || exportQty < 1 || !exportStaffName.trim()) {
+      if (!exportStaffName.trim()) error(t('please_enter_info'));
+      return;
+    }
+    const item = order.items.find(i => i.itemId === showExportItem.itemId);
+    if (!item) return;
+    const maxExport = item.quantity - (item.exportedQuantity || 0);
+    if (exportQty > maxExport) { error(`Tối đa: ${maxExport}`); return; }
+    
+    try {
+      await db.exportStock(order.id, item.productId, exportQty, `${t('export_stock')} - ${t('staff_label')}: ${exportStaffName}`);
+      setShowExportItem(null);
+      setExportQty(1);
+      setExportStaffName('');
+      success(t('export_success') || 'Xuất kho thành công');
+      refreshApp();
+    } catch (err: any) {
+      console.error('Export error:', err);
+      error(err.message || 'Lỗi xuất kho. Vui lòng thử lại.');
+    }
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -144,9 +170,9 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     }
   };
 
-  const handleForceComplete = () => {
+  const handleForceComplete = async () => {
     if (!staffName.trim()) { error(t('please_enter_info')); return; }
-    db.forceCompleteOrder(order.id, staffName);
+    await db.forceCompleteOrder(order.id, staffName);
     refreshApp();
     onClose();
   };
@@ -269,6 +295,17 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                       {isEditable && (
                         <td className="p-3 text-center">
                           <div className="flex gap-1 justify-center">
+                            {/* Export button - show if not fully exported */}
+                            {exported < item.quantity && (
+                              <button
+                                onClick={() => { setShowExportItem(item); setExportQty(item.quantity - exported); }}
+                                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded"
+                                title={t('export_stock') || 'Xuất kho'}
+                              >
+                                <ArrowUpCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            {/* Return button - show if has exported items */}
                             {remaining > 0 && (
                               <button
                                 onClick={() => { setShowPartialReturn(item); setReturnQty(1); }}
@@ -278,6 +315,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
                                 <ArrowDownCircle className="w-4 h-4" />
                               </button>
                             )}
+                            {/* Delete button - only if not exported */}
                             {exported === 0 && (
                               <button
                                 onClick={() => handleRemoveItem(item.itemId)}
@@ -414,6 +452,24 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
             <input type="text" className="w-full border p-2 rounded-lg" value={returnStaffName} onChange={e => setReturnStaffName(e.target.value)} placeholder={t('staff_name_placeholder')} />
           </div>
           <button onClick={handlePartialReturn} disabled={!returnStaffName.trim()} className="w-full bg-blue-500 text-white py-2.5 rounded-lg font-bold disabled:opacity-50">{t('confirm')}</button>
+        </Modal>
+      )}
+
+      {showExportItem && (
+        <Modal title={t('export_stock') || 'Xuất kho'} onClose={() => setShowExportItem(null)}>
+          <div className="bg-orange-50 p-3 rounded-lg mb-4">
+            <p className="font-medium">{db.products.find(p => p.id === showExportItem.productId)?.name}</p>
+            <p className="text-sm text-slate-500">Chờ xuất: {showExportItem.quantity - (showExportItem.exportedQuantity || 0)}</p>
+          </div>
+          <div className="mb-3">
+            <label className="block text-sm font-medium mb-1">Số lượng xuất</label>
+            <input type="number" className="w-full border p-2 rounded-lg" value={exportQty} onChange={e => setExportQty(Number(e.target.value))} min={1} max={showExportItem.quantity - (showExportItem.exportedQuantity || 0)} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">{t('staff_info')} *</label>
+            <input type="text" className="w-full border p-2 rounded-lg" value={exportStaffName} onChange={e => setExportStaffName(e.target.value)} placeholder={t('staff_name_placeholder')} />
+          </div>
+          <button onClick={handleExportItem} disabled={!exportStaffName.trim()} className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-bold disabled:opacity-50">{t('confirm')}</button>
         </Modal>
       )}
     </div>
