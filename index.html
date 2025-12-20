@@ -16,25 +16,41 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-  <!-- Premium Font -->
+  <!-- Performance: DNS Prefetch & Preconnect -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Critical: Preload fonts for faster rendering -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </noscript>
+
+  <!-- Preload critical CSS -->
+  <link rel="preload" href="/index.css" as="style">
+  <link rel="preload" href="/src/styles/ios-theme.css" as="style">
+
+  <!-- External scripts with async for non-blocking -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript" async></script>
+
+  <!-- Tailwind config -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
           },
           colors: {
-            primary: '#2563eb', // Royal Blue
+            primary: '#2563eb',
             primaryDark: '#1e40af',
-            secondary: '#64748b', // Slate
-            background: '#f8fafc', // Very light blue-grey
+            secondary: '#64748b',
+            background: '#f8fafc',
             surface: '#ffffff',
           },
           boxShadow: {
@@ -45,6 +61,8 @@
       }
     }
   </script>
+
+  <!-- Import map for React -->
   <script type="importmap">
 {
   "imports": {
@@ -56,26 +74,124 @@
   }
 }
 </script>
+
+  <!-- Load CSS -->
   <link rel="stylesheet" href="/index.css">
   <link rel="stylesheet" href="/src/styles/ios-theme.css">
+
+  <!-- Critical CSS inline for faster first paint -->
+  <style>
+    /* Critical CSS for immediate render */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    #root {
+      min-height: 100vh;
+    }
+
+    /* Loading spinner */
+    .app-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      z-index: 9999;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Reduce motion for accessibility & performance */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* GPU acceleration hints */
+    .ios-tab-bar,
+    .ios-tab-item {
+      will-change: transform;
+      transform: translateZ(0);
+    }
+  </style>
 </head>
 
 <body class="bg-background text-slate-800 antialiased">
-  <div id="root"></div>
+  <!-- Loading screen while app initializes -->
+  <div id="root">
+    <div class="app-loading" id="app-loader">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
   <script type="module" src="/index.tsx"></script>
 
-  <!-- Register Service Worker -->
+  <!-- Register Service Worker immediately -->
   <script>
+    // Hide loader when app is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      const loader = document.getElementById('app-loader');
+      if (loader) {
+        setTimeout(() => {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.3s';
+          setTimeout(() => loader.remove(), 300);
+        }, 100);
+      }
+    });
+
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('PWA: Service Worker registered', registration.scope);
-          })
-          .catch((error) => {
-            console.log('PWA: Service Worker registration failed', error);
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('PWA: Service Worker registered');
+
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available
+                console.log('PWA: Update available');
+              }
+            });
           });
-      });
+        })
+        .catch((error) => {
+          console.log('PWA: Service Worker registration failed', error);
+        });
     }
   </script>
 </body>

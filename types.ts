@@ -75,7 +75,18 @@ export interface Staff {
   id: number;
   username: string;
   password: string;
+  passcode?: string;  // Quick numeric passcode for QR scan login
   name: string;
   role: 'admin' | 'staff';
   active: boolean;
+}
+
+// Equipment Set - Danh sách thiết bị với QR code
+export interface EquipmentSet {
+  id: number;
+  name: string;           // Tên danh sách, VD: "Set sự kiện A"
+  code: string;           // Mã unique để tạo QR, VD: "SET-001"
+  productIds: number[];   // Danh sách ID sản phẩm
+  note?: string;
+  createdAt: string;
 }

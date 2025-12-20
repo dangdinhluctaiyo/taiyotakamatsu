@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Staff } from '../types';
-import { Users, Plus, Edit, Trash2, X, Save, Shield, User, Check, Ban } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, X, Save, Shield, User, Check, Ban, KeyRound } from 'lucide-react';
 
 export const StaffManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
-  const [formData, setFormData] = useState({ username: '', password: '', name: '', role: 'staff' as 'admin' | 'staff', active: true });
+  const [formData, setFormData] = useState({ username: '', password: '', passcode: '', name: '', role: 'staff' as 'admin' | 'staff', active: true });
 
   const handleAdd = () => {
     setEditingStaff(null);
-    setFormData({ username: '', password: '', name: '', role: 'staff', active: true });
+    setFormData({ username: '', password: '', passcode: '', name: '', role: 'staff', active: true });
     setShowModal(true);
   };
 
   const handleEdit = (staff: Staff) => {
     setEditingStaff(staff);
-    setFormData({ username: staff.username, password: '', name: staff.name, role: staff.role, active: staff.active });
+    setFormData({ username: staff.username, password: '', passcode: staff.passcode || '', name: staff.name, role: staff.role, active: staff.active });
     setShowModal(true);
   };
 
@@ -28,7 +28,7 @@ export const StaffManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp 
     }
 
     if (editingStaff) {
-      const updates: Partial<Staff> = { username: formData.username, name: formData.name, role: formData.role, active: formData.active };
+      const updates: Partial<Staff> = { username: formData.username, name: formData.name, role: formData.role, active: formData.active, passcode: formData.passcode.trim() || undefined };
       if (formData.password.trim()) updates.password = formData.password;
       db.updateStaff(editingStaff.id, updates);
     } else {
@@ -36,7 +36,7 @@ export const StaffManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp 
         alert(t('please_enter_info'));
         return;
       }
-      db.addStaff({ username: formData.username, password: formData.password, name: formData.name, role: formData.role, active: formData.active });
+      db.addStaff({ username: formData.username, password: formData.password, passcode: formData.passcode.trim() || undefined, name: formData.name, role: formData.role, active: formData.active });
     }
 
     setShowModal(false);
@@ -150,6 +150,22 @@ export const StaffManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp 
               <div>
                 <label className="block text-sm font-medium mb-1">{editingStaff ? t('password_change_hint') : t('password') + ' *'}</label>
                 <input type="password" className="w-full border p-2 rounded-lg" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="••••••" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+                  <KeyRound className="w-4 h-4" /> {t('passcode_label')}
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  className="w-full border p-2 rounded-lg font-mono tracking-widest text-center text-lg"
+                  value={formData.passcode}
+                  onChange={e => setFormData({ ...formData, passcode: e.target.value.replace(/\D/g, '') })}
+                  placeholder={t('passcode_placeholder')}
+                />
+                <p className="text-xs text-slate-500 mt-1">{t('passcode_hint')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('role')}</label>

@@ -314,3 +314,110 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+
+/* GPU Acceleration for frequently animated elements */
+.ios-tab-bar,
+.ios-tab-item,
+.ios-modal,
+.ios-sheet,
+.ios-card,
+[class*="rounded-2xl"],
+[class*="shadow-"] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Contain layout for better performance */
+.ios-card,
+.product-card,
+.order-card,
+.task-card {
+  contain: layout style;
+}
+
+/* Efficient scrolling */
+.scroll-container,
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"] {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Reduced motion for accessibility and performance */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ios-fade-in,
+  .ios-slide-up {
+    animation: none !important;
+  }
+}
+
+/* Touch optimizations */
+button,
+a,
+[role="button"],
+.ios-tab-item,
+.ios-list-item {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent text selection on UI elements */
+.ios-tab-bar,
+.ios-header,
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Optimize images */
+img {
+  content-visibility: auto;
+  contain-intrinsic-size: 100px 100px;
+}
+
+/* Lazy render off-screen content */
+.lazy-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 200px;
+}
+
+/* Fast tap response */
+* {
+  -webkit-touch-callout: none;
+}
+
+/* Smooth tab transitions */
+.ios-tab-item {
+  will-change: background-color, color;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+/* Optimize modal/sheet backdrop */
+.ios-backdrop {
+  will-change: opacity;
+}
+
+/* Smooth scroll snap for carousels */
+.snap-container {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-item {
+  scroll-snap-align: start;
+}

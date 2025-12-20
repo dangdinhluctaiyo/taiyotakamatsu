@@ -133,9 +133,8 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
                     filteredProducts.map(product => (
                       <label
                         key={product.id}
-                        className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-50 transition-colors ${
-                          selectedProducts.has(product.id) ? 'bg-purple-50' : ''
-                        }`}
+                        className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-50 transition-colors ${selectedProducts.has(product.id) ? 'bg-purple-50' : ''
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -179,11 +178,10 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
                       <button
                         key={size}
                         onClick={() => setQrSize(size)}
-                        className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                          qrSize === size
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                        className={`py-2 rounded-lg text-sm font-medium transition-all ${qrSize === size
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
                       >
                         {size === 'small' ? t('small') : size === 'medium' ? t('medium') : t('large')}
                       </button>
@@ -271,9 +269,9 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
 
       {/* Print Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-auto">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-auto print-container">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10 print-header">
               <h3 className="font-bold text-lg">{t('preview')} - {selectedProducts.size} {t('products_count')}</h3>
               <div className="flex gap-2">
                 <button
@@ -290,8 +288,8 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
                 </button>
               </div>
             </div>
-            
-            <div ref={printRef} className="p-6 print:p-0">
+
+            <div ref={printRef} className="p-6 print-content">
               <div className="flex flex-wrap gap-4 justify-center print:gap-2">
                 {selectedProductsList.map(product => (
                   <QRCard
@@ -312,20 +310,38 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
       {/* Print Styles */}
       <style>{`
         @media print {
-          body * {
-            visibility: hidden;
+          @page {
+            margin: 1cm;
+            size: A4;
           }
-          .print\\:p-0, .print\\:p-0 * {
-            visibility: visible;
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .print\\:p-0 {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+          body > *:not(.print-container) {
+            display: none !important;
           }
-          .print\\:gap-2 {
-            gap: 0.5rem;
+          .print-container {
+            display: block !important;
+            position: static !important;
+            visibility: visible !important;
+          }
+          .print-container * {
+            visibility: visible !important;
+          }
+          .print-container .print-header {
+            display: none !important;
+          }
+          .print-container .print-content {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            justify-content: flex-start !important;
+            align-content: flex-start !important;
+          }
+          .print-container .print-content > div {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}</style>
@@ -356,7 +372,7 @@ const QRCard: React.FC<{
       <div className={`flex items-center justify-center ${s.gap}`}>
         {/* Product Image */}
         {showImage && (
-          <div 
+          <div
             className="rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200"
             style={{ width: s.imgSize, height: s.imgSize }}
           >
@@ -367,7 +383,7 @@ const QRCard: React.FC<{
             />
           </div>
         )}
-        
+
         {/* QR Code */}
         <div className="bg-white p-1 rounded-lg border border-slate-100">
           <img
@@ -377,7 +393,7 @@ const QRCard: React.FC<{
           />
         </div>
       </div>
-      
+
       {/* Bottom: Product Info */}
       {(showName || showCode) && (
         <div className="mt-2 pt-2 border-t border-slate-100 text-center">

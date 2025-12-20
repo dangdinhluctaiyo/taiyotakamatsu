@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Scanner as ScannerEmbed } from './Scanner';
-import { Warehouse, Package, Sparkles, Wrench, CheckCircle, Clock, AlertTriangle, ChevronRight, RefreshCw, Scan } from 'lucide-react';
+import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode } from 'lucide-react';
 
 interface Props {
     refreshApp: () => void;
@@ -129,8 +129,6 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     };
 
     const handleMarkPrepared = async (task: PrepareTask) => {
-        // This would ideally call a prepare API
-        // For now, we just refresh and show feedback
         try {
             await db.exportStock(task.orderId, task.productId, task.quantity, `Chuẩn bị đơn #${task.orderId}`);
             refreshApp();
@@ -142,7 +140,6 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
 
     const handleMarkCleaned = async (task: CleanTask) => {
         try {
-            // Save clean log to Supabase via db service
             const { supabase } = await import('../services/supabase');
             await supabase.from('inventory_logs').insert({
                 product_id: task.productId,
@@ -154,7 +151,6 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 note: '清掃完了 / Đã vệ sinh'
             });
 
-            // Update local logs
             db.logs.push({
                 id: Math.floor(Math.random() * 100000),
                 productId: task.productId,
@@ -167,9 +163,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 staffName: db.currentUser?.name
             });
 
-            // Remove this task from the list immediately
             setCleanTasks(prev => prev.filter(t => t.productId !== task.productId));
-
             refreshApp();
         } catch (e) {
             console.error('Error marking cleaned:', e);
@@ -185,50 +179,50 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     };
 
     const tabs = [
-        { key: 'scanner', label: t('nav_scanner') || 'Quét QR', icon: Scan, count: 0, color: 'purple' },
-        { key: 'prepare', label: t('to_prepare') || 'Chuẩn bị', icon: Package, count: prepareTasks.length, color: 'orange' },
-        { key: 'clean', label: t('to_clean') || 'Vệ sinh', icon: Sparkles, count: cleanTasks.length, color: 'blue' },
+        { key: 'scanner', label: t('nav_scanner') || 'Quét QR', icon: QrCode, count: 0 },
+        { key: 'prepare', label: t('to_prepare') || 'Chuẩn bị', icon: Package, count: prepareTasks.length },
+        { key: 'clean', label: t('to_clean') || 'Vệ sinh', icon: Sparkles, count: cleanTasks.length },
     ];
 
     return (
-        <div className="min-h-screen bg-stone-50">
-            {/* Header */}
-            <div className="bg-white border-b border-stone-200 px-4 py-5 md:px-8">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-semibold text-stone-800">{t('warehouse_dashboard') || 'Kho hàng'}</h1>
-                            <p className="text-stone-400 text-sm mt-0.5">{t('warehouse_tasks_desc') || 'Quản lý xuất nhập kho'}</p>
-                        </div>
-                        <button
-                            onClick={loadTasks}
-                            className="p-2 rounded-lg hover:bg-stone-100 transition-colors text-stone-500"
-                        >
-                            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                        </button>
+        <div className="min-h-screen bg-gray-50">
+            {/* Header - Compact */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 pt-4 pb-16">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-lg font-bold">{t('warehouse_dashboard') || 'Quản lý Kho'}</h1>
+                        <p className="text-indigo-200 text-xs mt-0.5">{t('warehouse_tasks_desc') || 'Xuất nhập & vệ sinh thiết bị'}</p>
                     </div>
+                    <button
+                        onClick={loadTasks}
+                        className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"
+                    >
+                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="px-4 md:px-8 py-4 pb-24 md:pb-8">
-                <div className="max-w-5xl mx-auto space-y-4">
+            <div className="px-4 -mt-10 pb-28">
+                <div className="max-w-2xl mx-auto space-y-4">
 
-                    {/* Tabs */}
-                    <div className="bg-white rounded-lg border border-stone-200 p-1.5 flex gap-1">
+                    {/* Tabs - Modern Segmented Control */}
+                    <div className="bg-white rounded-2xl shadow-lg p-1.5 flex gap-1">
                         {tabs.map(tab => (
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key as any)}
-                                className={`flex-1 py-2.5 px-3 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === tab.key
-                                    ? 'bg-stone-900 text-white'
-                                    : 'text-stone-600 hover:bg-stone-100'
+                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === tab.key
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'text-gray-500 hover:bg-gray-100'
                                     }`}
                             >
-                                <tab.icon className="w-4 h-4" />
-                                <span className="hidden md:inline">{tab.label}</span>
+                                <tab.icon className="w-5 h-5" />
+                                <span className="hidden sm:inline">{tab.label}</span>
                                 {tab.count > 0 && (
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${activeTab === tab.key ? 'bg-white/20' : 'bg-stone-200'
+                                    <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${activeTab === tab.key
+                                        ? 'bg-white text-indigo-600'
+                                        : 'bg-red-500 text-white'
                                         }`}>
                                         {tab.count}
                                     </span>
@@ -237,66 +231,83 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                         ))}
                     </div>
 
+                    {/* Scanner Tab */}
+                    {activeTab === 'scanner' && (
+                        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                            <ScannerEmbed refreshApp={refreshApp} />
+                        </div>
+                    )}
+
                     {/* Prepare Tab */}
                     {activeTab === 'prepare' && (
                         <div className="space-y-3">
                             {loading ? (
-                                <div className="bg-white rounded-lg border border-stone-200 p-8 text-center">
-                                    <RefreshCw className="w-6 h-6 text-stone-300 mx-auto mb-2 animate-spin" />
-                                    <p className="text-stone-400 text-sm">{t('loading')}</p>
-                                </div>
+                                <LoadingCard />
                             ) : prepareTasks.length === 0 ? (
-                                <div className="bg-white rounded-lg border border-stone-200 p-8 text-center">
-                                    <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                                    <p className="text-stone-600 font-medium">{t('no_tasks') || 'Không có việc cần làm'}</p>
-                                    <p className="text-stone-400 text-sm mt-1">{t('all_prepared')}</p>
-                                </div>
+                                <EmptyCard
+                                    icon={<CheckCircle className="w-12 h-12 text-green-500" />}
+                                    title={t('no_tasks') || 'Không có việc cần làm'}
+                                    subtitle={t('all_prepared') || 'Tất cả đơn hàng đã được chuẩn bị'}
+                                />
                             ) : (
                                 prepareTasks.map((task, idx) => {
                                     const daysUntil = getDaysUntil(task.rentalStartDate);
                                     const isUrgent = daysUntil <= 1;
 
                                     return (
-                                        <div key={idx} className={`bg-white rounded-lg border ${isUrgent ? 'border-red-200' : 'border-stone-200'} p-4`}>
-                                            <div className="flex items-start gap-3">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isUrgent ? 'bg-red-50' : 'bg-amber-50'}`}>
-                                                    <Package className={`w-5 h-5 ${isUrgent ? 'text-red-500' : 'text-amber-500'}`} />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div>
-                                                            <h3 className="font-medium text-stone-800">{task.productName}</h3>
-                                                            <p className="text-xs text-stone-400">{task.productCode}</p>
-                                                        </div>
-                                                        <div className="text-right shrink-0">
-                                                            <p className="text-xl font-semibold text-stone-700">x{task.quantity}</p>
-                                                        </div>
+                                        <div key={idx} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${isUrgent ? 'ring-2 ring-red-400' : ''}`}>
+                                            {/* Urgency Bar */}
+                                            <div className={`h-1 ${isUrgent ? 'bg-red-500' : daysUntil <= 2 ? 'bg-amber-400' : 'bg-green-400'}`} />
+
+                                            <div className="p-4">
+                                                <div className="flex items-start gap-3">
+                                                    {/* Icon */}
+                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isUrgent ? 'bg-red-100' : 'bg-amber-100'}`}>
+                                                        <Package className={`w-6 h-6 ${isUrgent ? 'text-red-600' : 'text-amber-600'}`} />
                                                     </div>
 
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        <span className="inline-flex items-center gap-1 text-[11px] bg-stone-100 text-stone-500 px-2 py-1 rounded-md">
-                                                            <Clock className="w-3 h-3" />
-                                                            {isUrgent ? (
-                                                                <span className="text-red-500 font-medium">{t('today')}!</span>
-                                                            ) : (
-                                                                `${daysUntil} ${t('days_left')}`
-                                                            )}
-                                                        </span>
-                                                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg">
-                                                            #{task.orderId} - {task.customerName}
-                                                        </span>
-                                                        {task.location && (
-                                                            <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg font-mono">
-                                                                📍 {task.location}
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between">
+                                                            <div>
+                                                                <h3 className="font-bold text-gray-900 text-base">{task.productName}</h3>
+                                                                <p className="text-xs text-gray-400 font-mono">{task.productCode}</p>
+                                                            </div>
+                                                            <div className="text-right ml-2">
+                                                                <p className="text-2xl font-bold text-indigo-600">×{task.quantity}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Tags */}
+                                                        <div className="flex flex-wrap gap-2 mt-3">
+                                                            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${isUrgent
+                                                                ? 'bg-red-100 text-red-700'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                                }`}>
+                                                                <Clock className="w-3.5 h-3.5" />
+                                                                {isUrgent ? (t('today') + '!') : `${daysUntil} ${t('days_left') || 'ngày'}`}
                                                             </span>
-                                                        )}
+                                                            <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
+                                                                <User className="w-3.5 h-3.5" />
+                                                                {task.customerName}
+                                                            </span>
+                                                            {task.location && (
+                                                                <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-medium font-mono">
+                                                                    <MapPin className="w-3.5 h-3.5" />
+                                                                    {task.location}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                {/* Action Button */}
                                                 <button
                                                     onClick={() => handleMarkPrepared(task)}
-                                                    className="p-3 bg-green-500 text-white rounded-xl hover:bg-green-600 active:scale-95 transition-all"
+                                                    className="w-full mt-4 py-3 bg-green-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-600 active:scale-[0.98] transition-all shadow-sm"
                                                 >
                                                     <CheckCircle className="w-5 h-5" />
+                                                    {t('prepare') || 'Đã chuẩn bị xong'}
                                                 </button>
                                             </div>
                                         </div>
@@ -310,41 +321,58 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                     {activeTab === 'clean' && (
                         <div className="space-y-3">
                             {loading ? (
-                                <div className="bg-white rounded-2xl p-8 text-center">
-                                    <RefreshCw className="w-8 h-8 text-slate-300 mx-auto mb-2 animate-spin" />
-                                    <p className="text-slate-500">{t('loading')}</p>
-                                </div>
+                                <LoadingCard />
                             ) : cleanTasks.length === 0 ? (
-                                <div className="bg-white rounded-2xl p-8 text-center">
-                                    <Sparkles className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-                                    <p className="text-slate-600 font-medium">{t('no_dirty_items') || 'Không có thiết bị bẩn'}</p>
-                                    <p className="text-slate-400 text-sm mt-1">{t('all_cleaned')}</p>
-                                </div>
+                                <EmptyCard
+                                    icon={<Sparkles className="w-12 h-12 text-blue-500" />}
+                                    title={t('no_dirty_items') || 'Không có thiết bị bẩn'}
+                                    subtitle={t('all_cleaned') || 'Tất cả đã được vệ sinh sạch sẽ'}
+                                />
                             ) : (
                                 cleanTasks.map((task, idx) => (
-                                    <div key={idx} className="bg-white rounded-2xl shadow-sm border-l-4 border-blue-400 p-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                                <Sparkles className="w-6 h-6 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-slate-800">{task.productName}</h3>
-                                                <div className="flex gap-2 mt-1">
-                                                    <span className="text-xs text-slate-500">{task.productCode}</span>
+                                    <div key={idx} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                                        {/* Blue accent bar */}
+                                        <div className="h-1 bg-blue-500" />
+
+                                        <div className="p-4">
+                                            <div className="flex items-start gap-3">
+                                                {/* Icon */}
+                                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                                                    <Sparkles className="w-6 h-6 text-blue-600" />
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between">
+                                                        <div>
+                                                            <h3 className="font-bold text-gray-900 text-base">{task.productName}</h3>
+                                                            <p className="text-xs text-gray-400 font-mono">{task.productCode}</p>
+                                                        </div>
+                                                        <div className="text-right ml-2">
+                                                            <p className="text-xs text-gray-400">{t('dirty_qty') || 'Cần VS'}</p>
+                                                            <p className="text-2xl font-bold text-blue-600">×{task.dirtyQty}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Location tag */}
                                                     {task.location && (
-                                                        <span className="text-xs text-indigo-500 font-mono">📍 {task.location}</span>
+                                                        <div className="mt-3">
+                                                            <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-medium font-mono">
+                                                                <MapPin className="w-3.5 h-3.5" />
+                                                                {task.location}
+                                                            </span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-slate-400">{t('dirty_qty') || 'SL Bẩn'}</p>
-                                                <p className="text-xl font-bold text-blue-600">{task.dirtyQty}</p>
-                                            </div>
+
+                                            {/* Action Button */}
                                             <button
                                                 onClick={() => handleMarkCleaned(task)}
-                                                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 active:scale-95 transition-all"
+                                                className="w-full mt-4 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-600 active:scale-[0.98] transition-all shadow-sm"
                                             >
-                                                <CheckCircle className="w-5 h-5" />
+                                                <Sparkles className="w-5 h-5" />
+                                                {t('clean_all') || 'Đã vệ sinh xong'}
                                             </button>
                                         </div>
                                     </div>
@@ -352,15 +380,24 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                             )}
                         </div>
                     )}
-
-                    {/* Scanner Tab - Embedded Scanner */}
-                    {activeTab === 'scanner' && (
-                        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                            <ScannerEmbed refreshApp={refreshApp} />
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
     );
 };
+
+// Helper Components
+const LoadingCard = () => (
+    <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+        <RefreshCw className="w-8 h-8 text-gray-300 mx-auto mb-3 animate-spin" />
+        <p className="text-gray-400 text-sm">{t('loading') || 'Đang tải...'}</p>
+    </div>
+);
+
+const EmptyCard: React.FC<{ icon: React.ReactNode; title: string; subtitle: string }> = ({ icon, title, subtitle }) => (
+    <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+        <div className="mb-4">{icon}</div>
+        <p className="text-gray-700 font-semibold">{title}</p>
+        <p className="text-gray-400 text-sm mt-1">{subtitle}</p>
+    </div>
+);

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Product, Order, OrderStatus, Customer, Supplier, InventoryLog, Staff } from '../types';
+import { Product, Order, OrderStatus, Customer, Supplier, InventoryLog, Staff, EquipmentSet } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -15,6 +15,7 @@ export class SupabaseDB {
   suppliers: Supplier[] = [];
   logs: InventoryLog[] = [];
   staff: Staff[] = [];
+  equipmentSets: EquipmentSet[] = [];
   currentUser: Staff | null = null;
   private initialized = false;
 
@@ -35,18 +36,20 @@ export class SupabaseDB {
   async init() {
     if (this.initialized) return;
     try {
-      const [products, orders, customers, staff, logs] = await Promise.all([
+      const [products, orders, customers, staff, logs, equipmentSets] = await Promise.all([
         this.fetchProducts(),
         this.fetchOrders(),
         this.fetchCustomers(),
         this.fetchStaff(),
         this.fetchLogs(),
+        this.fetchEquipmentSetsFromSupabase(),
       ]);
       this.products = products;
       this.orders = orders;
       this.customers = customers;
       this.staff = staff;
       this.logs = logs;
+      this.equipmentSets = equipmentSets;
       this.initialized = true;
     } catch (e) { console.error('Failed to init Supabase DB:', e); }
   }
@@ -114,10 +117,166 @@ export class SupabaseDB {
     }));
   }
 
+  // Equipment Sets - stored in localStorage for now (can migrate to Supabase later)
+  private async fetchEquipmentSets(): Promise<EquipmentSet[]> {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('lucrental_equipment_sets');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Migrate old format (items) to new format (productIds)
+        const migrated = parsed.map((set: EquipmentSet & { items?: { productId: number }[] }) => {
+          if (set.items && !set.productIds) {
+            return {
+              ...set,
+              productIds: set.items.map(i => i.productId),
+              items: undefined
+            };
+          }
+          return { ...set, productIds: set.productIds || [] };
+        });
+        // Save migrated data back
+        localStorage.setItem('lucrental_equipment_sets', JSON.stringify(migrated));
+        return migrated;
+      } catch { return []; }
+    }
+    return [];
+  }
+
+  // Fetch from Supabase (new)
+  private async fetchEquipmentSetsFromSupabase(): Promise<EquipmentSet[]> {
+    const { data, error } = await supabase
+      .from('equipment_sets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching equipment_sets from Supabase:', error);
+      // Fallback to localStorage if table doesn't exist yet
+      return this.fetchEquipmentSets();
+    }
+
+    if (data && data.length > 0) {
+      // Map Supabase columns to TypeScript interface
+      return data.map(row => ({
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        productIds: row.product_ids || [],
+        note: row.note,
+        createdAt: row.created_at
+      }));
+    }
+
+    // If Supabase is empty but localStorage has data, migrate it
+    const localData = await this.fetchEquipmentSets();
+    if (localData.length > 0) {
+      console.log('Migrating equipment_sets from localStorage to Supabase...');
+      for (const set of localData) {
+        await supabase.from('equipment_sets').insert({
+          name: set.name,
+          code: set.code,
+          product_ids: set.productIds,
+          note: set.note
+        });
+      }
+      // Clear localStorage after migration
+      localStorage.removeItem('lucrental_equipment_sets');
+      // Re-fetch from Supabase
+      return this.fetchEquipmentSetsFromSupabase();
+    }
+
+    return [];
+  }
+
+  // ============ EQUIPMENT SETS (Admin only) ============
+  getEquipmentSetByCode(code: string): EquipmentSet | undefined {
+    return this.equipmentSets.find(s => s.code.toLowerCase() === code.toLowerCase());
+  }
+
+  async addEquipmentSet(set: Omit<EquipmentSet, 'id' | 'createdAt'>): Promise<EquipmentSet> {
+    const { data, error } = await supabase
+      .from('equipment_sets')
+      .insert({
+        name: set.name,
+        code: set.code,
+        product_ids: set.productIds,
+        note: set.note
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding equipment set:', error);
+      throw error;
+    }
+
+    const newSet: EquipmentSet = {
+      id: data.id,
+      name: data.name,
+      code: data.code,
+      productIds: data.product_ids || [],
+      note: data.note,
+      createdAt: data.created_at
+    };
+    this.equipmentSets.push(newSet);
+    return newSet;
+  }
+
+  async updateEquipmentSet(id: number, updates: Partial<EquipmentSet>) {
+    const { error } = await supabase
+      .from('equipment_sets')
+      .update({
+        name: updates.name,
+        product_ids: updates.productIds,
+        note: updates.note
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating equipment set:', error);
+      return;
+    }
+
+    const index = this.equipmentSets.findIndex(s => s.id === id);
+    if (index !== -1) {
+      this.equipmentSets[index] = { ...this.equipmentSets[index], ...updates };
+    }
+  }
+
+  async deleteEquipmentSet(id: number) {
+    const { error } = await supabase
+      .from('equipment_sets')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting equipment set:', error);
+      return;
+    }
+
+    this.equipmentSets = this.equipmentSets.filter(s => s.id !== id);
+  }
+
+  generateSetCode(): string {
+    const count = this.equipmentSets.length + 1;
+    return `SET-${String(count).padStart(3, '0')}`;
+  }
+
   // ============ AUTH ============
   login(username: string, password: string): Staff | null {
     const user = this.staff.find(s => s.username === username && s.password === password && s.active);
     if (user) { this.currentUser = user; localStorage.setItem('lucrental_session', JSON.stringify(user)); }
+    return user || null;
+  }
+
+  // Quick login by passcode (for QR deep link)
+  loginByPasscode(passcode: string): Staff | null {
+    const user = this.staff.find(s => s.passcode === passcode && s.active);
+    if (user) {
+      this.currentUser = user;
+      localStorage.setItem('lucrental_session', JSON.stringify(user));
+    }
     return user || null;
   }
 

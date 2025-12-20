@@ -163,11 +163,11 @@ export const SerialManager: React.FC<Props> = ({ product, onClose, refreshApp })
     };
 
     const statusLabels: Record<string, string> = {
-        AVAILABLE: 'Sẵn sàng',
-        RESERVED: 'Đã đặt',
-        ON_RENT: 'Đang thuê',
-        DIRTY: 'Cần vệ sinh',
-        BROKEN: 'Hỏng'
+        AVAILABLE: t('status_available'),
+        RESERVED: t('status_reserved'),
+        ON_RENT: t('status_on_rent'),
+        DIRTY: t('status_dirty'),
+        BROKEN: t('status_broken')
     };
 
     const stats = {
@@ -203,23 +203,23 @@ export const SerialManager: React.FC<Props> = ({ product, onClose, refreshApp })
                 <div className="px-5 py-3 bg-slate-50 border-b grid grid-cols-5 gap-2">
                     <div className="text-center">
                         <p className="text-lg font-bold text-slate-700">{stats.total}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Tổng</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{t('stat_total')}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-lg font-bold text-green-600">{stats.available}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Sẵn sàng</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{t('status_available')}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-lg font-bold text-blue-600">{stats.onRent}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Đang thuê</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{t('status_on_rent')}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-lg font-bold text-yellow-600">{stats.dirty}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Cần VS</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{t('status_dirty')}</p>
                     </div>
                     <div className="text-center">
                         <p className="text-lg font-bold text-red-600">{stats.broken}</p>
-                        <p className="text-[10px] text-slate-500 uppercase">Hỏng</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{t('status_broken')}</p>
                     </div>
                 </div>
 
@@ -265,11 +265,11 @@ export const SerialManager: React.FC<Props> = ({ product, onClose, refreshApp })
                         className="px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm cursor-pointer"
                     >
                         <option value="ALL">{t('all')}</option>
-                        <option value="AVAILABLE">Sẵn sàng</option>
-                        <option value="RESERVED">Đã đặt</option>
-                        <option value="ON_RENT">Đang thuê</option>
-                        <option value="DIRTY">Cần vệ sinh</option>
-                        <option value="BROKEN">Hỏng</option>
+                        <option value="AVAILABLE">{t('status_available')}</option>
+                        <option value="RESERVED">{t('status_reserved')}</option>
+                        <option value="ON_RENT">{t('status_on_rent')}</option>
+                        <option value="DIRTY">{t('status_dirty')}</option>
+                        <option value="BROKEN">{t('status_broken')}</option>
                     </select>
                 </div>
 
@@ -284,7 +284,7 @@ export const SerialManager: React.FC<Props> = ({ product, onClose, refreshApp })
                         <div className="text-center py-8">
                             <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                             <p className="text-slate-500">{t('no_serials') || 'Chưa có serial nào'}</p>
-                            <p className="text-slate-400 text-sm mt-1">Thêm serial để theo dõi từng thiết bị</p>
+                            <p className="text-slate-400 text-sm mt-1">{t('add_serial_hint')}</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -296,7 +296,7 @@ export const SerialManager: React.FC<Props> = ({ product, onClose, refreshApp })
                                     <div className="flex-1">
                                         <p className="font-mono font-bold text-slate-800">{serial.serialNumber}</p>
                                         {serial.orderId && (
-                                            <p className="text-xs text-slate-500">Đơn #{serial.orderId}</p>
+                                            <p className="text-xs text-slate-500">{t('order_label')} #{serial.orderId}</p>
                                         )}
                                     </div>
                                     <select

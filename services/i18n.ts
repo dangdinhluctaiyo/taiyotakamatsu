@@ -470,6 +470,71 @@ const translations = {
     preview: 'Xem trước',
     no_products_selected: 'Chưa chọn sản phẩm nào',
     generating: 'Đang tạo...',
+
+    // Equipment Set
+    equipment_set: 'Danh sách thiết bị',
+    equipment_set_desc: 'Tạo list thiết bị để xuất/nhập nhanh',
+    create_new: 'Tạo mới',
+    create_first_set: 'Tạo danh sách đầu tiên',
+    no_sets: 'Chưa có danh sách nào',
+    show_qr: 'Hiển thị QR',
+    set_code: 'Mã',
+    equipment_count: 'thiết bị',
+    create_set: 'Tạo danh sách mới',
+    edit_set: 'Sửa danh sách',
+    set_name: 'Tên danh sách',
+    set_note: 'Ghi chú',
+    add_equipment_to_set: 'Thêm thiết bị',
+    selected_equipment: 'Thiết bị đã chọn',
+    no_equipment_selected: 'Chưa chọn thiết bị nào',
+    scan_to_export_import: 'Quét để xuất/nhập',
+    confirm_delete_set: 'Xác nhận xóa danh sách này?',
+    batch_export: 'Xuất tất cả',
+    batch_import: 'Nhập tất cả',
+    confirm_and_complete: 'Xác nhận & Hoàn thành',
+    processing: 'Đang xử lý...',
+    export_count_result: 'Xuất',
+    import_count_result: 'Nhập',
+    error_count_result: 'Lỗi',
+    products_text: 'sản phẩm',
+    stock_label: 'Kho',
+    not_enough_warning: 'Thiếu',
+    remove_from_list: 'Xóa khỏi danh sách',
+
+    // Navigation - Equipment Sets
+    nav_equipment_sets: 'Danh sách TB',
+
+    // PasscodeEntry
+    enter_passcode: 'Nhập mã PIN',
+    passcode_min_4: 'Mã PIN phải có ít nhất 4 số',
+    passcode_incorrect: 'Mã PIN không đúng',
+    login_with_account: 'Đăng nhập bằng tài khoản →',
+    scanned_code: 'Quét',
+
+    // Scanner messages
+    set_not_found: 'Không tìm thấy bộ thiết bị',
+    export_by_set: 'Xuất theo bộ',
+    import_by_set: 'Nhập theo bộ',
+    export_stock_success: 'Xuất kho',
+    import_stock_success: 'Nhập kho',
+
+    // Serial status labels
+    stat_total: 'Tổng',
+    status_available: 'Sẵn sàng',
+    status_reserved: 'Đã đặt',
+    status_on_rent: 'Đang thuê',
+    status_dirty: 'Cần VS',
+    status_broken: 'Hỏng',
+    add_serial_hint: 'Thêm serial để theo dõi từng thiết bị',
+    order_label: 'Đơn',
+
+    // StaffManager
+    passcode_label: 'Mã PIN (quét QR nhanh)',
+    passcode_hint: 'Dùng để đăng nhập nhanh khi quét QR thiết bị',
+    passcode_placeholder: '4-6 số',
+
+    // Update button
+    update: 'Cập nhật',
   },
 
   ja: {
@@ -939,17 +1004,98 @@ const translations = {
     preview: 'プレビュー',
     no_products_selected: '商品が選択されていません',
     generating: '作成中...',
+
+    // Equipment Set
+    equipment_set: '機材リスト',
+    equipment_set_desc: '入出庫を素早く行うための機材リストを作成',
+    create_new: '新規作成',
+    create_first_set: '最初のリストを作成',
+    no_sets: 'リストがありません',
+    show_qr: 'QRを表示',
+    set_code: 'コード',
+    equipment_count: '機材',
+    create_set: '新規リスト作成',
+    edit_set: 'リスト編集',
+    set_name: 'リスト名',
+    set_note: 'メモ',
+    add_equipment_to_set: '機材を追加',
+    selected_equipment: '選択された機材',
+    no_equipment_selected: '機材が選択されていません',
+    scan_to_export_import: 'スキャンして入出庫',
+    confirm_delete_set: 'このリストを削除しますか？',
+    batch_export: 'すべて出庫',
+    batch_import: 'すべて入庫',
+    confirm_and_complete: '確認して完了',
+    processing: '処理中...',
+    export_count_result: '出庫',
+    import_count_result: '入庫',
+    error_count_result: 'エラー',
+    products_text: '商品',
+    stock_label: '在庫',
+    not_enough_warning: '不足',
+    remove_from_list: 'リストから削除',
+
+    // Navigation - Equipment Sets
+    nav_equipment_sets: '機材リスト',
+
+    // PasscodeEntry
+    enter_passcode: 'PINを入力',
+    passcode_min_4: 'PINは4桁以上必要です',
+    passcode_incorrect: 'PINが正しくありません',
+    login_with_account: 'アカウントでログイン →',
+    scanned_code: 'スキャン',
+
+    // Scanner messages
+    set_not_found: '機材リストが見つかりません',
+    export_by_set: 'リストから出庫',
+    import_by_set: 'リストから入庫',
+    export_stock_success: '出庫完了',
+    import_stock_success: '入庫完了',
+
+    // Serial status labels
+    stat_total: '合計',
+    status_available: '利用可',
+    status_reserved: '予約済',
+    status_on_rent: 'レンタル中',
+    status_dirty: '清掃待',
+    status_broken: '故障',
+    add_serial_hint: 'シリアルを追加して各機器を追跡',
+    order_label: '注文',
+
+    // StaffManager
+    passcode_label: 'PIN (QRスキャン用)',
+    passcode_hint: 'QRスキャン時のクイックログイン用',
+    passcode_placeholder: '4-6桁',
+
+    // Update button
+    update: '更新',
   }
 };
 
 const STORAGE_KEY = 'lucrental_language';
 
+// Detect device language
+function detectDeviceLanguage(): Language {
+  if (typeof window !== 'undefined' && navigator.language) {
+    const browserLang = navigator.language.toLowerCase();
+    if (browserLang.startsWith('vi')) return 'vi';
+    if (browserLang.startsWith('ja')) return 'ja';
+  }
+  // Default to Japanese if device language not supported
+  return 'ja';
+}
+
 export function getLanguage(): Language {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'vi' || saved === 'ja') return saved;
+
+    // Auto-detect on first visit
+    const detected = detectDeviceLanguage();
+    localStorage.setItem(STORAGE_KEY, detected);
+    return detected;
   }
-  return 'vi';
+  return 'ja';
 }
 
 export function setLanguage(lang: Language) {

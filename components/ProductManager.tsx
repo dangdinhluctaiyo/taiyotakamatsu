@@ -765,33 +765,33 @@ const ProductCard: React.FC<{
           </div>
 
           {/* Mobile: iOS-style simple icon buttons */}
-          <div className="flex md:hidden gap-3">
+          <div className="flex md:hidden items-center justify-end gap-1">
             <button
               onClick={onSerial}
-              className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+              className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
             >
-              <Tag className="w-5 h-5" />
+              <Tag className="w-4 h-4" />
             </button>
             <button
               onClick={onQR}
-              className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+              className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
             >
-              <QrCode className="w-5 h-5" />
+              <QrCode className="w-4 h-4" />
             </button>
             {isAdmin && (
               <button
                 onClick={onEdit}
-                className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+                className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
               >
-                <Edit className="w-5 h-5" />
+                <Edit className="w-4 h-4" />
               </button>
             )}
             {isAdmin && (
               <button
                 onClick={onDelete}
-                className="w-9 h-9 flex items-center justify-center text-[--ios-red] hover:opacity-70 transition-colors active:opacity-50"
+                className="w-8 h-8 flex items-center justify-center text-[--ios-red] hover:opacity-70 transition-colors active:opacity-50"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
           </div>

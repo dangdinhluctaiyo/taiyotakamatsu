@@ -13,6 +13,8 @@ import { CategoryManager } from './components/CategoryManager';
 import { InventoryHistory } from './components/InventoryHistory';
 import { QRGenerator } from './components/QRGenerator';
 import { WarehouseDashboard } from './components/WarehouseDashboard';
+import { AIChat } from './components/AIChat';
+import { EquipmentSetManager } from './components/EquipmentSetManager';
 
 import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen, QrCode, Warehouse } from 'lucide-react';
 import { db } from './services/db';
@@ -31,7 +33,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE'>('WAREHOUSE');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE' | 'EQUIPMENT_SETS'>('WAREHOUSE');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -47,11 +49,24 @@ function AppContent() {
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Deep linking: pending scan code from URL
+  const [pendingScanCode, setPendingScanCode] = useState<string | null>(null);
+
   // Load data from cloud on mount
   React.useEffect(() => {
     const loadData = async () => {
       try {
         await db.init();
+
+        // Check for deep link URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const scanCode = urlParams.get('code');
+        if (scanCode) {
+          // Store pending scan code - will be processed after login
+          setPendingScanCode(scanCode);
+          // Clean URL without refreshing page
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       } catch (e) {
         console.error('Failed to load data:', e);
       } finally {
@@ -72,6 +87,15 @@ function AppContent() {
   };
   const isAdmin = db.currentUser?.role === 'admin';
 
+  // Handle pending scan code after login
+  React.useEffect(() => {
+    if (isLoggedIn && pendingScanCode) {
+      // Navigate to Scanner view with the pending code
+      setView('SCANNER');
+      // The Scanner component will read pendingScanCode
+    }
+  }, [isLoggedIn, pendingScanCode]);
+
   const handleLogout = () => {
     db.logout();
     setIsLoggedIn(false);
@@ -90,6 +114,20 @@ function AppContent() {
           <p className="text-stone-500 font-medium text-sm">{t('loading')}</p>
         </div>
       </div>
+    );
+  }
+
+  // Show passcode entry if deep link pending and not logged in
+  if (!isLoggedIn && pendingScanCode) {
+    const PasscodeEntry = React.lazy(() => import('./components/PasscodeEntry').then(m => ({ default: m.PasscodeEntry })));
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="text-white">{t('loading')}</div></div>}>
+        <PasscodeEntry
+          setCode={pendingScanCode}
+          onSuccess={() => { setIsLoggedIn(true); setTick(t => t + 1); }}
+          onCancel={() => { setPendingScanCode(null); }}
+        />
+      </React.Suspense>
     );
   }
 
@@ -152,6 +190,7 @@ function AppContent() {
                   <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers') || 'Khách hàng'} />
                   <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
                   <NavButton active={view === 'QR_GENERATOR'} onClick={() => setView('QR_GENERATOR')} icon={<QrCode />} label={t('nav_qr_generator') || 'Tạo QR'} />
+                  <NavButton active={view === 'EQUIPMENT_SETS'} onClick={() => setView('EQUIPMENT_SETS')} icon={<Package />} label={t('nav_equipment_sets')} />
                   <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
                 </nav>
               )}
@@ -476,13 +515,14 @@ function AppContent() {
 
           {view === 'CUSTOMERS' && <CustomerManager refreshApp={refreshApp} />}
 
-          {view === 'SCANNER' && <Scanner refreshApp={refreshApp} />}
+          {view === 'SCANNER' && <Scanner refreshApp={refreshApp} pendingScanCode={pendingScanCode} onClearPendingCode={() => setPendingScanCode(null)} />}
 
           {view === 'HISTORY' && <InventoryHistory refreshApp={refreshApp} />}
 
           {view === 'CATEGORIES' && <CategoryManager refreshApp={refreshApp} />}
 
           {view === 'QR_GENERATOR' && <QRGenerator refreshApp={refreshApp} />}
+          {view === 'EQUIPMENT_SETS' && <EquipmentSetManager refreshApp={refreshApp} />}
 
           {view === 'WAREHOUSE' && <WarehouseDashboard refreshApp={refreshApp} />}
         </div>
@@ -510,6 +550,9 @@ function AppContent() {
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
+
+      {/* AI Chat Assistant - Admin Only */}
+      {isAdmin && <AIChat refreshApp={refreshApp} />}
 
       {/* Reset Data Modal - Admin Only */}
       {showResetModal && isAdmin && (
