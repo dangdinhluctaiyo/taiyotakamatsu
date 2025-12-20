@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Product } from '../types';
@@ -269,9 +270,9 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
 
       {/* Print Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-auto print-container">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-auto no-print">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10 print-header">
+            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
               <h3 className="font-bold text-lg">{t('preview')} - {selectedProducts.size} {t('products_count')}</h3>
               <div className="flex gap-2">
                 <button
@@ -289,8 +290,8 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
               </div>
             </div>
 
-            <div ref={printRef} className="p-6 print-content">
-              <div className="flex flex-wrap gap-4 justify-center print:gap-2">
+            <div className="p-6">
+              <div className="flex flex-wrap gap-4 justify-center">
                 {selectedProductsList.map(product => (
                   <QRCard
                     key={product.id}
@@ -307,41 +308,68 @@ export const QRGenerator: React.FC<{ refreshApp: () => void }> = ({ refreshApp }
         </div>
       )}
 
+      {/* Print Area - Rendered outside React root via Portal */}
+      {typeof document !== 'undefined' && ReactDOM.createPortal(
+        <div id="print-area">
+          <div className="print-grid">
+            {selectedProductsList.map(product => (
+              <QRCard
+                key={product.id}
+                product={product}
+                size={qrSize}
+                showImage={showImage}
+                showName={showName}
+                showCode={showCode}
+              />
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Print Styles */}
       <style>{`
+        @media screen {
+          #print-area {
+            position: absolute;
+            left: -999999px;
+            top: 0;
+          }
+        }
+        
         @media print {
           @page {
-            margin: 1cm;
+            margin: 5mm;
             size: A4;
           }
+          
           body {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            margin: 0;
+            padding: 0;
           }
-          body > *:not(.print-container) {
+          
+          body > div:not(#print-area) {
             display: none !important;
           }
-          .print-container {
+          
+          #print-area {
+            position: relative !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
             display: block !important;
-            position: static !important;
-            visibility: visible !important;
           }
-          .print-container * {
-            visibility: visible !important;
-          }
-          .print-container .print-header {
-            display: none !important;
-          }
-          .print-container .print-content {
+          
+          #print-area .print-grid {
             display: flex !important;
             flex-wrap: wrap !important;
-            gap: 8px !important;
-            justify-content: flex-start !important;
-            align-content: flex-start !important;
+            gap: 6px !important;
+            padding: 5mm !important;
           }
-          .print-container .print-content > div {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+          
+          #print-area .print-grid > div {
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
         }
       `}</style>
