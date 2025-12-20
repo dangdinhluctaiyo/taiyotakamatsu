@@ -254,6 +254,8 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
               <div className="flex-1 relative">
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="w-full text-center text-3xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
@@ -431,18 +433,42 @@ export const Scanner: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) =>
                 <input
                   type="text"
                   value={inputQuery}
-                  onChange={(e) => setInputQuery(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setInputQuery(value);
+                    // Auto-search as user types
+                    if (value.trim()) {
+                      handleSearch(value);
+                    } else {
+                      setSearchResults([]);
+                      setFeedback(null);
+                    }
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder={t('enter_product')}
                   className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
                 />
               </div>
-              <button
-                onClick={() => handleSearch()}
-                className="px-6 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all"
-              >
-                {t('find')}
-              </button>
+              {inputQuery.trim() ? (
+                <button
+                  onClick={() => {
+                    setInputQuery('');
+                    setSearchResults([]);
+                    setFeedback(null);
+                  }}
+                  className="px-6 bg-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-300 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  {t('clear') || 'Xóa'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSearch()}
+                  className="px-6 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                >
+                  {t('find')}
+                </button>
+              )}
             </div>
           </div>
 

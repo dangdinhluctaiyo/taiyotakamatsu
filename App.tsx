@@ -111,11 +111,11 @@ function AppContent() {
 
 
   return (
-    <div className="flex h-screen bg-background text-slate-800 font-sans overflow-hidden">
-      {/* Sidebar - Modern Light Theme (Notion/Linear style) */}
-      <aside className="hidden md:flex flex-col w-64 bg-stone-50 border-r border-stone-200 z-20">
+    <div className="flex h-screen bg-[#F2F2F7] text-slate-800 font-sans overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif' }}>
+      {/* Sidebar - iOS Style */}
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-[#E5E5EA] z-20">
         {/* Logo */}
-        <div className="p-5 border-b border-stone-200">
+        <div className="p-5 border-b border-[#E5E5EA]">
           <div className="flex items-center gap-3">
             <img
               src="https://shikoku-taiyo-g.com/img/logo_header.png"
@@ -194,11 +194,31 @@ function AppContent() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)] shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-        <MobileNavBtn active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} />
-        <MobileNavBtn active={view === 'WAREHOUSE' || view === 'SCANNER'} onClick={() => setView('WAREHOUSE')} icon={<Warehouse />} isMain label={t('warehouse_dashboard') || 'Kho'} />
-        <MobileNavBtn active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
+      {/* iOS-Style Tab Bar - Clear Labels */}
+      <div className="md:hidden ios-tab-bar">
+        <button
+          onClick={() => setView('ORDERS')}
+          className={`ios-tab-item ${view === 'ORDERS' ? 'active' : ''}`}
+        >
+          <ShoppingCart className="ios-tab-icon" />
+          <span className="ios-tab-label">{t('nav_orders_short')}</span>
+        </button>
+
+        <button
+          onClick={() => setView('WAREHOUSE')}
+          className={`ios-tab-item ${view === 'WAREHOUSE' || view === 'SCANNER' ? 'active' : ''}`}
+        >
+          <Warehouse className="ios-tab-icon" />
+          <span className="ios-tab-label">{t('nav_warehouse_short')}</span>
+        </button>
+
+        <button
+          onClick={() => setView('INVENTORY')}
+          className={`ios-tab-item ${view === 'INVENTORY' ? 'active' : ''}`}
+        >
+          <Box className="ios-tab-icon" />
+          <span className="ios-tab-label">{t('nav_equipment_short')}</span>
+        </button>
       </div>
 
       <main
@@ -209,7 +229,7 @@ function AppContent() {
           setShowScrollTop(target.scrollTop > 300);
         }}
       >
-        <div className="md:hidden p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b flex justify-between items-center pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="md:hidden p-4 ios-glass sticky top-0 z-30 border-b border-[#E5E5EA]/50 flex justify-between items-center pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <img
               src="https://shikoku-taiyo-g.com/img/logo_header.png"
@@ -223,7 +243,7 @@ function AppContent() {
           </div>
           <div className="flex items-center gap-2">
             {view === 'ORDERS' && (
-              <button onClick={() => setShowCreateModal(true)} className="bg-primary text-white p-2 rounded-lg shadow-lg shadow-blue-500/30 active:scale-95 transition-transform"><PlusIcon /></button>
+              <button onClick={() => setShowCreateModal(true)} className="bg-[--ios-blue] text-white p-2.5 rounded-xl shadow-lg active:scale-95 transition-transform"><PlusIcon /></button>
             )}
             <LanguageSwitcher compact />
             <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title={t('logout')}>
@@ -244,7 +264,7 @@ function AppContent() {
                 </div>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="hidden md:flex bg-stone-900 hover:bg-stone-800 text-white px-4 py-2.5 rounded-lg transition-all font-medium text-sm items-center gap-2"
+                  className="hidden md:flex ios-button px-6 py-3 rounded-xl text-sm items-center gap-2"
                 >
                   <PlusIcon /> {t('create_order')}
                 </button>
@@ -286,9 +306,9 @@ function AppContent() {
                   <button
                     key={tab.key}
                     onClick={() => setOrderFilter(tab.key as any)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${orderFilter === tab.key
-                      ? 'bg-primary text-white shadow'
-                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${orderFilter === tab.key
+                      ? 'bg-[--ios-blue] text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-[#E5E5EA]'
                       }`}
                   >
                     {tab.label} {tab.count > 0 && <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${orderFilter === tab.key ? 'bg-white/20' : 'bg-slate-100'}`}>{tab.count}</span>}
@@ -347,7 +367,7 @@ function AppContent() {
                   <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
                     <ShoppingCart className="w-16 h-16 text-slate-200 mx-auto mb-4" />
                     <p className="text-slate-500 font-medium">{t('no_orders')}</p>
-                    <button onClick={() => setShowCreateModal(true)} className="text-primary font-bold mt-2 hover:underline">{t('create_now')}</button>
+                    <button onClick={() => setShowCreateModal(true)} className="text-[--ios-blue] font-semibold mt-2 hover:underline">{t('create_now')}</button>
                   </div>
                 ) : db.orders.filter(o => {
                   const today = new Date();
@@ -385,7 +405,7 @@ function AppContent() {
                     customer?.phone?.includes(search)
                   );
                 }).slice().reverse().map(order => (
-                  <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-white p-4 rounded-lg border border-stone-200 hover:border-stone-300 hover:shadow-sm transition-all cursor-pointer group">
+                  <div key={order.id} onClick={() => setSelectedOrder(order)} className="ios-card p-4 hover:shadow-md transition-all cursor-pointer group active:scale-[0.99]">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm shrink-0 ${order.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : order.status === 'COMPLETED' ? 'bg-blue-50 text-blue-600' : 'bg-stone-100 text-stone-500'

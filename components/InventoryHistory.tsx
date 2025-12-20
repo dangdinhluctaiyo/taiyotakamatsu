@@ -227,7 +227,7 @@ export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refresh
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('quantity')}</label>
-                <input type="number" className="w-full border p-2 rounded-lg" value={editQty} onChange={e => setEditQty(Number(e.target.value))} min={1} />
+                <input type="number" inputMode="numeric" pattern="[0-9]*" className="w-full border p-2 rounded-lg" value={editQty} onChange={e => setEditQty(Number(e.target.value))} min={1} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('staff_info')}</label>

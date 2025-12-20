@@ -253,7 +253,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-xs font-bold text-slate-500 mb-1 block">{t('quantity_needed')}</label>
-                    <input type="number" value={tempQty} onChange={(e) => setTempQty(Number(e.target.value))} min={1}
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" value={tempQty} onChange={(e) => setTempQty(Number(e.target.value))} min={1}
                       className="w-full border-2 border-indigo-200 p-2.5 rounded-lg font-bold text-center text-lg bg-white focus:border-indigo-500 outline-none" />
                   </div>
                   <div className="flex flex-col justify-center">
@@ -403,7 +403,7 @@ export const CreateOrder: React.FC<{ onClose: () => void; refreshApp: () => void
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">{t('quantity')}</label>
-                <input type="number" value={newProduct.quantity} onChange={e => setNewProduct({ ...newProduct, quantity: Number(e.target.value) })} min={1}
+                <input type="number" inputMode="numeric" pattern="[0-9]*" value={newProduct.quantity} onChange={e => setNewProduct({ ...newProduct, quantity: Number(e.target.value) })} min={1}
                   className="w-full border-2 border-slate-200 p-3 rounded-xl focus:border-purple-500 outline-none" />
               </div>
               <div>

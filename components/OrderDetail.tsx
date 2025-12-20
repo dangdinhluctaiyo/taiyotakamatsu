@@ -146,7 +146,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
     if (!item) return;
     const maxExport = item.quantity - (item.exportedQuantity || 0);
     if (exportQty > maxExport) { error(`Tối đa: ${maxExport}`); return; }
-    
+
     try {
       await db.exportStock(order.id, item.productId, exportQty, `${t('export_stock')} - ${t('staff_label')}: ${exportStaffName}`);
       setShowExportItem(null);
@@ -401,7 +401,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('quantity')}</label>
-              <input type="number" className="w-full border p-2 rounded-lg" value={newQty} onChange={e => setNewQty(Number(e.target.value))} min={1} />
+              <input type="number" inputMode="numeric" pattern="[0-9]*" className="w-full border p-2 rounded-lg" value={newQty} onChange={e => setNewQty(Number(e.target.value))} min={1} />
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={isExternal} onChange={e => setIsExternal(e.target.checked)} /> {t('external_rent')}
@@ -445,7 +445,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
           </div>
           <div className="mb-3">
             <label className="block text-sm font-medium mb-1">{t('return_quantity')}</label>
-            <input type="number" className="w-full border p-2 rounded-lg" value={returnQty} onChange={e => setReturnQty(Number(e.target.value))} min={1} />
+            <input type="number" inputMode="numeric" pattern="[0-9]*" className="w-full border p-2 rounded-lg" value={returnQty} onChange={e => setReturnQty(Number(e.target.value))} min={1} />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">{t('staff_info')} *</label>
@@ -463,7 +463,7 @@ export const OrderDetail: React.FC<Props> = ({ order, onClose, refreshApp }) => 
           </div>
           <div className="mb-3">
             <label className="block text-sm font-medium mb-1">Số lượng xuất</label>
-            <input type="number" className="w-full border p-2 rounded-lg" value={exportQty} onChange={e => setExportQty(Number(e.target.value))} min={1} max={showExportItem.quantity - (showExportItem.exportedQuantity || 0)} />
+            <input type="number" inputMode="numeric" pattern="[0-9]*" className="w-full border p-2 rounded-lg" value={exportQty} onChange={e => setExportQty(Number(e.target.value))} min={1} max={showExportItem.quantity - (showExportItem.exportedQuantity || 0)} />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">{t('staff_info')} *</label>

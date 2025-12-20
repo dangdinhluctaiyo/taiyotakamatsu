@@ -14,6 +14,7 @@ const translations = {
     edit: 'Sửa',
     add: 'Thêm',
     search: 'Tìm kiếm',
+    clear: 'Xóa',
     all: 'Tất cả',
     confirm: 'Xác nhận',
     close: 'Đóng',
@@ -40,6 +41,14 @@ const translations = {
     nav_staff: 'Nhân viên',
     nav_customers: 'Khách hàng',
     nav_categories: 'Danh mục',
+    // Mobile nav short labels
+    nav_orders_short: 'Đơn hàng',
+    nav_warehouse_short: 'Kho',
+    nav_equipment_short: 'Thiết bị',
+    nav_inventory_short: 'Kho hàng',
+    nav_scan: 'Quét QR',
+    nav_home: 'Tổng quan',
+    nav_history_short: 'Lịch sử',
 
     // Customer Management
     customer_management: 'Quản lý khách hàng',
@@ -474,6 +483,7 @@ const translations = {
     edit: '編集',
     add: '追加',
     search: '検索',
+    clear: 'クリア',
     all: 'すべて',
     confirm: '確認',
     close: '閉じる',
@@ -500,6 +510,14 @@ const translations = {
     nav_staff: 'スタッフ',
     nav_customers: '顧客',
     nav_categories: 'カテゴリ',
+    // Mobile nav short labels
+    nav_orders_short: '注文',
+    nav_warehouse_short: '倉庫',
+    nav_equipment_short: '機材',
+    nav_inventory_short: '在庫',
+    nav_scan: 'スキャン',
+    nav_home: 'ホーム',
+    nav_history_short: '履歴',
 
     // Customer Management
     customer_management: '顧客管理',

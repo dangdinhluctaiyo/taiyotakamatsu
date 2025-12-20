@@ -3,8 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Offline - TaiyoTakamatsu Rental</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,81 +16,197 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fafaf9;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .container {
             text-align: center;
-            max-width: 400px;
+            max-width: 360px;
+            background: white;
+            padding: 48px 32px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
         }
 
-        .icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #3b82f6, #6366f1);
-            border-radius: 20px;
-            margin: 0 auto 24px;
+        .icon-wrapper {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-radius: 28px;
+            margin: 0 auto 28px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.35);
+            animation: pulse 2s infinite;
         }
 
-        .icon svg {
-            width: 40px;
-            height: 40px;
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .icon-wrapper svg {
+            width: 48px;
+            height: 48px;
             color: white;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: contain;
+            margin-bottom: 16px;
         }
 
         h1 {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1c1917;
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
             margin-bottom: 12px;
         }
 
-        p {
-            color: #78716c;
-            font-size: 14px;
+        .subtitle {
+            color: #64748b;
+            font-size: 15px;
             line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: #fef2f2;
+            border-radius: 12px;
             margin-bottom: 24px;
         }
 
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .status-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #dc2626;
+        }
+
         button {
-            background: #1c1917;
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
+            padding: 16px 28px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         button:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.45);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .hint {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94a3b8;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        <img src="https://shikoku-taiyo-g.com/img/logo_header.png" alt="Logo" class="logo">
+
+        <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
                     d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
             </svg>
         </div>
+
         <h1>Không có kết nối mạng</h1>
-        <p>Vui lòng kiểm tra kết nối internet của bạn và thử lại.</p>
-        <button onclick="location.reload()">Thử lại</button>
+
+        <p class="subtitle">
+            Vui lòng kết nối Internet để sử dụng ứng dụng TaiyoTakamatsu Rental.
+        </p>
+
+        <div class="status-bar">
+            <div class="status-dot"></div>
+            <span class="status-text">Đang chờ kết nối...</span>
+        </div>
+
+        <button onclick="location.reload()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Thử lại
+        </button>
+
+        <p class="hint">Kiểm tra WiFi hoặc dữ liệu di động của bạn</p>
     </div>
+
+    <script>
+        // Auto-reload when back online
+        window.addEventListener('online', () => {
+            location.reload();
+        });
+    </script>
 </body>
 
 </html>

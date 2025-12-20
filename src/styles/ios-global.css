@@ -1,0 +1,120 @@
+/* Global iOS Overrides and Enhancements */
+
+/* Use iOS system fonts globally */
+* {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS-style scrollbars - hide on mobile, subtle on desktop */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile: force hide scrollbars */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+
+    * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+/* Override Tailwind with iOS colors */
+.bg-primary {
+    background-color: var(--ios-blue) !important;
+}
+
+.text-primary {
+    color: var(--ios-blue) !important;
+}
+
+.border-primary {
+    border-color: var(--ios-blue) !important;
+}
+
+/* Ensure all rounded corners use iOS radius */
+.rounded-lg {
+    border-radius: var(--ios-radius-lg) !important;
+}
+
+.rounded-xl {
+    border-radius: var(--ios-radius-xl) !important;
+}
+
+.rounded-2xl {
+    border-radius: var(--ios-radius-2xl) !important;
+}
+
+/* iOS-style focus rings */
+*:focus {
+    outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+/* Smooth transitions everywhere */
+* {
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* iOS-style active states for buttons */
+button:active {
+    transform: scale(0.96);
+    opacity: 0.8;
+}
+
+/* Disable hardware acceleration jank */
+* {
+    will-change: auto;
+}
+
+button,
+a {
+    will-change: transform;
+}
+
+/* iOS-style elevation shadows */
+.shadow {
+    box-shadow: var(--ios-shadow-sm) !important;
+}
+
+.shadow-md {
+    box-shadow: var(--ios-shadow-md) !important;
+}
+
+.shadow-lg {
+    box-shadow: var(--ios-shadow-lg) !important;
+}
+
+/* Safe area handling */
+@supports (padding: env(safe-area-inset-bottom)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}

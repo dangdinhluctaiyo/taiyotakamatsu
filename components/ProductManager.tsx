@@ -230,6 +230,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   onDelete={() => handleDelete(p.id)}
                   onQR={() => setShowQRFor(p)}
                   onHistory={() => openHistory(p)}
+                  onSerial={() => setShowSerialFor(p)}
                   isAdmin={isAdmin}
                 />
               ))}
@@ -488,7 +489,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('total_assets')}</label>
-                <input type="number" className="w-full border p-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 outline-none focus:ring-2 focus:ring-indigo-500/20" value={formData.totalOwned} onChange={e => setFormData({ ...formData, totalOwned: Number(e.target.value) })} />
+                <input type="number" inputMode="numeric" pattern="[0-9]*" className="w-full border p-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 outline-none focus:ring-2 focus:ring-indigo-500/20" value={formData.totalOwned} onChange={e => setFormData({ ...formData, totalOwned: Number(e.target.value) })} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><MapPin className="w-3 h-3 inline" /> {t('location')}</label>
@@ -712,8 +713,8 @@ const FilterPill = ({ active, onClick, label, count, color }: {
 };
 
 const ProductCard: React.FC<{
-  product: Product; onView: () => void; onEdit: () => void; onDelete: () => void; onQR: () => void; onHistory: () => void; isAdmin: boolean;
-}> = ({ product: p, onView, onEdit, onDelete, onQR, onHistory, isAdmin }) => {
+  product: Product; onView: () => void; onEdit: () => void; onDelete: () => void; onQR: () => void; onHistory: () => void; onSerial: () => void; isAdmin: boolean;
+}> = ({ product: p, onView, onEdit, onDelete, onQR, onHistory, onSerial, isAdmin }) => {
   const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
   const isOut = p.currentPhysicalStock === 0;
   const stockPercent = (p.currentPhysicalStock / p.totalOwned) * 100;
@@ -753,11 +754,46 @@ const ProductCard: React.FC<{
         {/* Actions */}
         <div className="flex items-center justify-between pt-2 border-t" onClick={e => e.stopPropagation()}>
           <span className="text-xs text-slate-400">{onRent > 0 ? `${onRent} ${t('renting')}` : ''}</span>
-          <div className="flex gap-1">
+
+          {/* Desktop: Show all buttons */}
+          <div className="hidden md:flex gap-1">
             <IconBtn onClick={onHistory} icon={<History className="w-3.5 h-3.5" />} />
+            <IconBtn onClick={onSerial} icon={<Tag className="w-3.5 h-3.5 text-purple-500" />} />
             <IconBtn onClick={onQR} icon={<QrCode className="w-3.5 h-3.5" />} />
             {isAdmin && <IconBtn onClick={onEdit} icon={<Edit className="w-3.5 h-3.5" />} />}
             {isAdmin && <IconBtn onClick={onDelete} icon={<Trash2 className="w-3.5 h-3.5 text-red-500" />} />}
+          </div>
+
+          {/* Mobile: iOS-style simple icon buttons */}
+          <div className="flex md:hidden gap-3">
+            <button
+              onClick={onSerial}
+              className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onQR}
+              className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+            >
+              <QrCode className="w-5 h-5" />
+            </button>
+            {isAdmin && (
+              <button
+                onClick={onEdit}
+                className="w-9 h-9 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
+              >
+                <Edit className="w-5 h-5" />
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={onDelete}
+                className="w-9 h-9 flex items-center justify-center text-[--ios-red] hover:opacity-70 transition-colors active:opacity-50"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       </div>

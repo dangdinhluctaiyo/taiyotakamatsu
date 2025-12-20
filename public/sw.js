@@ -1,9 +1,10 @@
-const CACHE_NAME = 'taiyo-rental-v1';
+const CACHE_NAME = 'taiyo-rental-v2';
 const OFFLINE_URL = '/offline.html';
 
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
+    '/offline.html',
     '/manifest.json',
     '/icons/icon-192.png',
     '/icons/icon-512.png'
