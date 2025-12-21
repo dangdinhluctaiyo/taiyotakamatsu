@@ -296,7 +296,8 @@ export class SupabaseDB {
         code: product.code, name: product.name, category: product.category || 'Khác',
         price_per_day: product.pricePerDay, total_owned: product.totalOwned,
         current_physical_stock: product.totalOwned, image_url: product.imageUrl,
-        images: product.images || [], location: product.location, specs: product.specs
+        images: product.images || [], location: product.location, specs: product.specs,
+        is_serialized: product.isSerialized || false
       }).select().single();
       if (!error && data) this.products.push({ ...product, id: data.id, currentPhysicalStock: product.totalOwned });
     } else {
@@ -308,7 +309,8 @@ export class SupabaseDB {
         code: product.code, name: product.name, category: product.category,
         price_per_day: product.pricePerDay, total_owned: product.totalOwned,
         current_physical_stock: newStock, image_url: product.imageUrl,
-        images: product.images || [], location: product.location, specs: product.specs
+        images: product.images || [], location: product.location, specs: product.specs,
+        is_serialized: product.isSerialized || false
       }).eq('id', product.id);
 
       const index = this.products.findIndex(p => p.id === product.id);
