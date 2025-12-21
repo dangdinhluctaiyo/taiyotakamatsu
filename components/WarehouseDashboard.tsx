@@ -90,8 +90,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
 
             recentImports.forEach(importLog => {
                 const product = db.products.find(p => p.id === importLog.productId);
-                // Skip serialized products - they use device_serials status
-                if (product?.isSerialized) return;
+                if (!product) return;
 
                 const lastCleanForProduct = cleanLogs
                     .filter(c => c.productId === importLog.productId)
@@ -116,39 +115,6 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                     }
                 }
             });
-
-            // Source 2: device_serials with DIRTY status (for serialized products)
-            const { data: dirtySerials } = await supabase
-                .from('device_serials')
-                .select('product_id')
-                .eq('status', 'DIRTY');
-
-            if (dirtySerials && dirtySerials.length > 0) {
-                // Group by product_id and count
-                const serialCounts = new Map<number, number>();
-                dirtySerials.forEach(s => {
-                    serialCounts.set(s.product_id, (serialCounts.get(s.product_id) || 0) + 1);
-                });
-
-                serialCounts.forEach((count, productId) => {
-                    const product = db.products.find(p => p.id === productId);
-                    if (product) {
-                        const existing = cleanTasksMap.get(productId);
-                        if (existing) {
-                            existing.dirtyQty += count;
-                        } else {
-                            cleanTasksMap.set(productId, {
-                                productId: product.id,
-                                productName: product.name,
-                                productCode: product.code,
-                                dirtyQty: count,
-                                location: product.location,
-                                isSerialized: true
-                            });
-                        }
-                    }
-                });
-            }
 
             setCleanTasks(Array.from(cleanTasksMap.values()).filter(t => t.dirtyQty > 0));
 
