@@ -331,56 +331,64 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       {viewDetailFor && (
         <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white w-full h-[90vh] md:h-auto md:max-h-[90vh] md:max-w-2xl md:mx-4 md:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            {/* Image Gallery */}
-            <div className="relative h-56 md:h-64 bg-slate-100 shrink-0">
-              <img
-                src={getAllImages(viewDetailFor)[currentImageIndex]}
-                alt={viewDetailFor.name}
-                className="w-full h-full object-cover cursor-zoom-in"
-                onClick={() => setLightboxImage(getAllImages(viewDetailFor)[currentImageIndex])}
-              />
-              <button onClick={() => setViewDetailFor(null)} className="absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-white shadow-lg">
-                <X className="w-5 h-5 text-slate-600" />
-              </button>
-              {getAllImages(viewDetailFor).length > 1 && (
-                <>
-                  <button onClick={() => setCurrentImageIndex(i => i > 0 ? i - 1 : getAllImages(viewDetailFor).length - 1)} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white shadow-lg">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => setCurrentImageIndex(i => i < getAllImages(viewDetailFor).length - 1 ? i + 1 : 0)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white shadow-lg">
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {getAllImages(viewDetailFor).map((img, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setCurrentImageIndex(i)}
-                        className={`w-10 h-10 rounded-lg cursor-pointer overflow-hidden border-2 ${i === currentImageIndex ? 'border-white shadow-lg' : 'border-white/50'}`}
-                      >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    ))}
+            {/* Compact Header with Image */}
+            <div className="p-4 border-b shrink-0">
+              <div className="flex gap-4">
+                {/* Small Image */}
+                <div
+                  className="w-24 h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 cursor-zoom-in relative"
+                  onClick={() => setLightboxImage(getAllImages(viewDetailFor)[currentImageIndex])}
+                >
+                  <img
+                    src={getAllImages(viewDetailFor)[currentImageIndex]}
+                    alt={viewDetailFor.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {getAllImages(viewDetailFor).length > 1 && (
+                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-md">
+                      {currentImageIndex + 1}/{getAllImages(viewDetailFor).length}
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0">
+                      <span className="inline-block bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-mono font-bold mb-1">{viewDetailFor.code}</span>
+                      <h2 className="text-lg font-bold text-slate-800 truncate">{viewDetailFor.name}</h2>
+                      <p className="text-slate-500 text-sm">{viewDetailFor.category}</p>
+                    </div>
+                    <button onClick={() => setViewDetailFor(null)} className="p-2 hover:bg-slate-100 rounded-full">
+                      <X className="w-5 h-5 text-slate-400" />
+                    </button>
                   </div>
-                </>
-              )}
-              <div className="absolute bottom-4 left-4">
-                <span className="bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-sm font-mono font-bold shadow">{viewDetailFor.code}</span>
+                  {viewDetailFor.location && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                      <span className="text-xs font-medium text-blue-600">{viewDetailFor.location}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Image thumbnails if multiple */}
+              {getAllImages(viewDetailFor).length > 1 && (
+                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                  {getAllImages(viewDetailFor).map((img, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setCurrentImageIndex(i)}
+                      className={`w-12 h-12 rounded-lg cursor-pointer overflow-hidden shrink-0 border-2 ${i === currentImageIndex ? 'border-indigo-500' : 'border-transparent'}`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="p-5 overflow-y-auto flex-1">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-800 mb-1">{viewDetailFor.name}</h2>
-                  <p className="text-slate-500 text-sm">{viewDetailFor.category}</p>
-                </div>
-                {viewDetailFor.location && (
-                  <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1.5 rounded-lg">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                    <span className="text-xs font-medium text-blue-700">{viewDetailFor.location}</span>
-                  </div>
-                )}
-              </div>
+            <div className="p-4 overflow-y-auto flex-1">
 
               {/* Stats */}
               {viewDetailFor.isSerialized ? (
