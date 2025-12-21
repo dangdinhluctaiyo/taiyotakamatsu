@@ -1,5 +1,10 @@
 {
   "buildCommand": null,
   "outputDirectory": "dist",
-  "framework": null
+  "framework": null,
+  "build": {
+    "env": {
+      "NODE_VERSION": "24"
+    }
+  }
 }
