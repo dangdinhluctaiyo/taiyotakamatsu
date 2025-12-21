@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { db } from '../services/db';
+import { supabase } from '../services/supabase';
 import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
 import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag } from 'lucide-react';
@@ -20,6 +21,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [stockFilter, setStockFilter] = useState<'all' | 'available' | 'low' | 'out'>('all');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [showSerialFor, setShowSerialFor] = useState<Product | null>(null);
+  const [serialCounts, setSerialCounts] = useState<{ total: number, available: number, on_rent: number, dirty: number, broken: number }>({ total: 0, available: 0, on_rent: 0, dirty: 0, broken: 0 });
 
   const { success, error } = useToast();
   const isAdmin = db.currentUser?.role === 'admin';
@@ -30,6 +32,28 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [newImageUrl, setNewImageUrl] = useState('');
   const [imageInputMode, setImageInputMode] = useState<'url' | 'upload'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load serial counts when viewing serialized product
+  useEffect(() => {
+    if (viewDetailFor?.isSerialized) {
+      (async () => {
+        const { data, error } = await supabase
+          .from('device_serials')
+          .select('status')
+          .eq('product_id', viewDetailFor.id);
+        if (!error && data) {
+          const counts = { total: data.length, available: 0, on_rent: 0, dirty: 0, broken: 0 };
+          data.forEach(d => {
+            if (d.status === 'AVAILABLE') counts.available++;
+            else if (d.status === 'ON_RENT') counts.on_rent++;
+            else if (d.status === 'DIRTY') counts.dirty++;
+            else if (d.status === 'BROKEN') counts.broken++;
+          });
+          setSerialCounts(counts);
+        }
+      })();
+    }
+  }, [viewDetailFor]);
 
   const filteredProducts = useMemo(() => {
     return db.products.filter(p => {
@@ -359,23 +383,46 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-5">
-                <div className="bg-indigo-50 p-3 rounded-xl text-center">
-                  <Package className="w-5 h-5 text-indigo-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-indigo-600">{viewDetailFor.totalOwned}</p>
-                  <p className="text-[10px] text-indigo-500 uppercase font-bold">{t('total_owned_label')}</p>
+              {viewDetailFor.isSerialized ? (
+                /* Serial-based stats */
+                <div className="grid grid-cols-4 gap-2 mb-5">
+                  <div className="bg-indigo-50 p-2 rounded-xl text-center">
+                    <p className="text-lg font-bold text-indigo-600">{serialCounts.total}</p>
+                    <p className="text-[10px] text-indigo-500 uppercase font-bold">{t('stat_total')}</p>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded-xl text-center">
+                    <p className="text-lg font-bold text-green-600">{serialCounts.available}</p>
+                    <p className="text-[10px] text-green-500 uppercase font-bold">{t('status_available')}</p>
+                  </div>
+                  <div className="bg-orange-50 p-2 rounded-xl text-center">
+                    <p className="text-lg font-bold text-orange-600">{serialCounts.on_rent}</p>
+                    <p className="text-[10px] text-orange-500 uppercase font-bold">{t('status_on_rent')}</p>
+                  </div>
+                  <div className="bg-yellow-50 p-2 rounded-xl text-center">
+                    <p className="text-lg font-bold text-yellow-600">{serialCounts.dirty + serialCounts.broken}</p>
+                    <p className="text-[10px] text-yellow-600 uppercase font-bold">{t('status_dirty')}</p>
+                  </div>
                 </div>
-                <div className="bg-green-50 p-3 rounded-xl text-center">
-                  <Box className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-green-600">{viewDetailFor.currentPhysicalStock}</p>
-                  <p className="text-[10px] text-green-500 uppercase font-bold">{t('at_warehouse')}</p>
+              ) : (
+                /* Quantity-based stats */
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="bg-indigo-50 p-3 rounded-xl text-center">
+                    <Package className="w-5 h-5 text-indigo-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-indigo-600">{viewDetailFor.totalOwned}</p>
+                    <p className="text-[10px] text-indigo-500 uppercase font-bold">{t('total_owned_label')}</p>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-xl text-center">
+                    <Box className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-green-600">{viewDetailFor.currentPhysicalStock}</p>
+                    <p className="text-[10px] text-green-500 uppercase font-bold">{t('at_warehouse')}</p>
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded-xl text-center">
+                    <Truck className="w-5 h-5 text-orange-500 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-orange-600">{viewDetailFor.totalOwned - viewDetailFor.currentPhysicalStock}</p>
+                    <p className="text-[10px] text-orange-500 uppercase font-bold">{t('renting')}</p>
+                  </div>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-xl text-center">
-                  <Truck className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-orange-600">{viewDetailFor.totalOwned - viewDetailFor.currentPhysicalStock}</p>
-                  <p className="text-[10px] text-orange-500 uppercase font-bold">{t('renting')}</p>
-                </div>
-              </div>
+              )}
 
               {/* Specs */}
               {viewDetailFor.specs && (
