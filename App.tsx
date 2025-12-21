@@ -13,7 +13,7 @@ import { CategoryManager } from './components/CategoryManager';
 import { InventoryHistory } from './components/InventoryHistory';
 import { QRGenerator } from './components/QRGenerator';
 import { WarehouseDashboard } from './components/WarehouseDashboard';
-import { AIChat } from './components/AIChat';
+import { AIChat } from './components/AiChat';
 import { EquipmentSetManager } from './components/EquipmentSetManager';
 
 import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen, QrCode, Warehouse } from 'lucide-react';
