@@ -868,6 +868,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     onClick={() => {
                       setSerialMode('export');
                       loadSerials(scannedProduct.id, 'export');
+                      setSelectedSerialIds([]);
                     }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${serialMode === 'export'
                       ? 'bg-orange-500 text-white shadow-md'
@@ -881,6 +882,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     onClick={() => {
                       setSerialMode('import');
                       loadSerials(scannedProduct.id, 'import');
+                      setSelectedSerialIds([]);
                     }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${serialMode === 'import'
                       ? 'bg-teal-500 text-white shadow-md'
@@ -892,101 +894,118 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-indigo-600" />
-                    <span className="text-sm font-medium text-slate-700">
-                      {serialMode === 'export' ? 'Serial sẵn sàng xuất' : 'Serial đang thuê (chờ nhập)'}
-                      {' '}({selectedSerialIds.length} đã chọn)
-                    </span>
-                  </div>
+                {/* Input serial directly */}
+                <div className="mb-3">
+                  <p className="text-xs text-slate-500 mb-2">
+                    Nhập mã serial hoặc quét QR để thêm ({availableSerials.length} {serialMode === 'export' ? 'sẵn sàng' : 'đang thuê'})
+                  </p>
                   <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={serialSearchTerm}
+                      onChange={(e) => setSerialSearchTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && serialSearchTerm.trim()) {
+                          // Find matching serial and add to selection
+                          const found = availableSerials.find(s =>
+                            s.serialNumber.toLowerCase() === serialSearchTerm.toLowerCase().trim()
+                          );
+                          if (found && !selectedSerialIds.includes(found.id)) {
+                            setSelectedSerialIds([...selectedSerialIds, found.id]);
+                            setSerialSearchTerm('');
+                          }
+                        }
+                      }}
+                      placeholder="Nhập mã serial và Enter..."
+                      className="flex-1 px-4 py-3 bg-slate-50 border-2 rounded-xl text-sm font-mono outline-none focus:border-indigo-500"
+                    />
                     <button
-                      onClick={selectAllSerials}
-                      className="text-xs text-blue-600 hover:underline"
+                      onClick={() => {
+                        const found = availableSerials.find(s =>
+                          s.serialNumber.toLowerCase() === serialSearchTerm.toLowerCase().trim()
+                        );
+                        if (found && !selectedSerialIds.includes(found.id)) {
+                          setSelectedSerialIds([...selectedSerialIds, found.id]);
+                          setSerialSearchTerm('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium"
                     >
-                      Chọn tất cả
-                    </button>
-                    <button
-                      onClick={clearSerialSelection}
-                      className="text-xs text-slate-500 hover:underline"
-                    >
-                      Bỏ chọn
+                      +
                     </button>
                   </div>
-                </div>
-
-                {/* Search serial */}
-                <div className="relative mb-3">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={serialSearchTerm}
-                    onChange={(e) => setSerialSearchTerm(e.target.value)}
-                    placeholder="Tìm serial..."
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-xl text-sm outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Serial list */}
-                {loadingSerials ? (
-                  <div className="text-center py-4">
-                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">Đang tải...</p>
-                  </div>
-                ) : filteredSerials.length === 0 ? (
-                  <div className="text-center py-4">
-                    <Tag className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">
-                      {availableSerials.length === 0
-                        ? "Không có serial sẵn sàng để xuất"
-                        : "Không tìm thấy serial"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {filteredSerials.map(serial => (
-                      <label
-                        key={serial.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${selectedSerialIds.includes(serial.id)
-                          ? 'bg-indigo-50 ring-2 ring-indigo-500'
-                          : 'bg-slate-50 hover:bg-slate-100'
-                          }`}
-                      >
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center ${selectedSerialIds.includes(serial.id)
-                          ? 'bg-indigo-600'
-                          : 'border-2 border-slate-300'
-                          }`}>
-                          {selectedSerialIds.includes(serial.id) && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={selectedSerialIds.includes(serial.id)}
-                          onChange={() => toggleSerialSelection(serial.id)}
-                          className="hidden"
-                        />
-                        <span className="font-mono font-bold text-slate-800">{serial.serialNumber}</span>
-                        {serial.orderId && (
-                          <span className="text-xs text-blue-500 ml-auto">
-                            Đơn #{serial.orderId}
-                          </span>
+                  {/* Autocomplete suggestions */}
+                  {serialSearchTerm.trim() && (
+                    <div className="mt-2 max-h-32 overflow-y-auto bg-slate-50 rounded-xl border">
+                      {availableSerials
+                        .filter(s =>
+                          s.serialNumber.toLowerCase().includes(serialSearchTerm.toLowerCase()) &&
+                          !selectedSerialIds.includes(s.id)
+                        )
+                        .slice(0, 5)
+                        .map(serial => (
+                          <button
+                            key={serial.id}
+                            onClick={() => {
+                              setSelectedSerialIds([...selectedSerialIds, serial.id]);
+                              setSerialSearchTerm('');
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-indigo-50 text-sm font-mono flex items-center justify-between"
+                          >
+                            <span>{serial.serialNumber}</span>
+                            {serial.orderId && <span className="text-xs text-blue-500">#{serial.orderId}</span>}
+                          </button>
+                        ))}
+                      {availableSerials.filter(s =>
+                        s.serialNumber.toLowerCase().includes(serialSearchTerm.toLowerCase()) &&
+                        !selectedSerialIds.includes(s.id)
+                      ).length === 0 && (
+                          <p className="px-4 py-2 text-sm text-slate-400">Không tìm thấy serial phù hợp</p>
                         )}
-                      </label>
-                    ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected serials as chips */}
+                {selectedSerialIds.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-500">Đã chọn ({selectedSerialIds.length})</span>
+                      <button onClick={clearSerialSelection} className="text-xs text-red-500 hover:underline">
+                        Xóa tất cả
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSerialIds.map(id => {
+                        const serial = availableSerials.find(s => s.id === id);
+                        return serial ? (
+                          <span
+                            key={id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-mono"
+                          >
+                            {serial.serialNumber}
+                            <button
+                              onClick={() => setSelectedSerialIds(selectedSerialIds.filter(i => i !== id))}
+                              className="ml-1 hover:text-red-500"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
                 )}
 
-                {/* Selected count */}
-                {selectedSerialIds.length > 0 && (
-                  <div className="mt-3 pt-3 border-t text-center">
-                    <span className="text-lg font-bold text-indigo-600">
-                      {selectedSerialIds.length}
-                    </span>
-                    <span className="text-sm text-slate-500 ml-1">serial đã chọn</span>
-                  </div>
-                )}
+                {/* Quick actions */}
+                <div className="flex gap-2 text-xs">
+                  <button
+                    onClick={selectAllSerials}
+                    className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200"
+                  >
+                    Chọn tất cả ({availableSerials.length})
+                  </button>
+                </div>
               </div>
             ) : (
               /* Quantity Selector for non-serialized products */
@@ -1110,8 +1129,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               onClick={serialMode === 'export' ? handleExport : handleImport}
               disabled={selectedSerialIds.length === 0}
               className={`w-full py-4 font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none ${serialMode === 'export'
-                  ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/30 disabled:from-slate-400 disabled:to-slate-500'
-                  : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-green-500/30 disabled:from-slate-400 disabled:to-slate-500'
+                ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/30 disabled:from-slate-400 disabled:to-slate-500'
+                : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-green-500/30 disabled:from-slate-400 disabled:to-slate-500'
                 }`}
             >
               {serialMode === 'export' ? (
