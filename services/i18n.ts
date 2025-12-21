@@ -535,6 +535,20 @@ const translations = {
 
     // Update button
     update: 'Cập nhật',
+
+    // Serial Picker
+    serial_export_mode: 'Xuất kho',
+    serial_import_mode: 'Nhập kho',
+    serial_input_hint: 'Nhập mã serial hoặc quét QR để thêm',
+    serial_ready: 'sẵn sàng',
+    serial_on_rent: 'đang thuê',
+    serial_input_placeholder: 'Nhập mã serial và Enter...',
+    serial_not_found: 'Không tìm thấy serial phù hợp',
+    serial_selected: 'Đã chọn',
+    serial_clear_all: 'Xóa tất cả',
+    serial_select_all: 'Chọn tất cả',
+    serial_export_count: 'Xuất {0} serial',
+    serial_import_count: 'Nhập {0} serial',
   },
 
   ja: {
@@ -1069,6 +1083,20 @@ const translations = {
 
     // Update button
     update: '更新',
+
+    // Serial Picker
+    serial_export_mode: '出庫',
+    serial_import_mode: '入庫',
+    serial_input_hint: 'シリアル番号を入力またはQRスキャンで追加',
+    serial_ready: '利用可',
+    serial_on_rent: 'レンタル中',
+    serial_input_placeholder: 'シリアル番号を入力してEnter...',
+    serial_not_found: '該当するシリアルが見つかりません',
+    serial_selected: '選択済み',
+    serial_clear_all: 'すべてクリア',
+    serial_select_all: 'すべて選択',
+    serial_export_count: '{0}台を出庫',
+    serial_import_count: '{0}台を入庫',
   }
 };
 

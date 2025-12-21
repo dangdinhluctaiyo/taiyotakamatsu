@@ -876,7 +876,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                       }`}
                   >
                     <ArrowUpCircle className="w-4 h-4" />
-                    Xuất kho
+                    {t('serial_export_mode')}
                   </button>
                   <button
                     onClick={() => {
@@ -890,14 +890,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                       }`}
                   >
                     <ArrowDownCircle className="w-4 h-4" />
-                    Nhập kho
+                    {t('serial_import_mode')}
                   </button>
                 </div>
 
                 {/* Input serial directly */}
                 <div className="mb-3">
                   <p className="text-xs text-slate-500 mb-2">
-                    Nhập mã serial hoặc quét QR để thêm ({availableSerials.length} {serialMode === 'export' ? 'sẵn sàng' : 'đang thuê'})
+                    {t('serial_input_hint')} ({availableSerials.length} {serialMode === 'export' ? t('serial_ready') : t('serial_on_rent')})
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -916,7 +916,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                           }
                         }
                       }}
-                      placeholder="Nhập mã serial và Enter..."
+                      placeholder={t('serial_input_placeholder')}
                       className="flex-1 px-4 py-3 bg-slate-50 border-2 rounded-xl text-sm font-mono outline-none focus:border-indigo-500"
                     />
                     <button
@@ -960,7 +960,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                         s.serialNumber.toLowerCase().includes(serialSearchTerm.toLowerCase()) &&
                         !selectedSerialIds.includes(s.id)
                       ).length === 0 && (
-                          <p className="px-4 py-2 text-sm text-slate-400">Không tìm thấy serial phù hợp</p>
+                          <p className="px-4 py-2 text-sm text-slate-400">{t('serial_not_found')}</p>
                         )}
                     </div>
                   )}
@@ -970,9 +970,9 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                 {selectedSerialIds.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-slate-500">Đã chọn ({selectedSerialIds.length})</span>
+                      <span className="text-xs font-medium text-slate-500">{t('serial_selected')} ({selectedSerialIds.length})</span>
                       <button onClick={clearSerialSelection} className="text-xs text-red-500 hover:underline">
-                        Xóa tất cả
+                        {t('serial_clear_all')}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1003,7 +1003,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     onClick={selectAllSerials}
                     className="flex-1 py-2 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200"
                   >
-                    Chọn tất cả ({availableSerials.length})
+                    {t('serial_select_all')} ({availableSerials.length})
                   </button>
                 </div>
               </div>
@@ -1136,12 +1136,12 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               {serialMode === 'export' ? (
                 <>
                   <ArrowUpCircle className="w-6 h-6" />
-                  <span>Xuất {selectedSerialIds.length} serial</span>
+                  <span>{t('serial_export_count').replace('{0}', String(selectedSerialIds.length))}</span>
                 </>
               ) : (
                 <>
                   <ArrowDownCircle className="w-6 h-6" />
-                  <span>Nhập {selectedSerialIds.length} serial</span>
+                  <span>{t('serial_import_count').replace('{0}', String(selectedSerialIds.length))}</span>
                 </>
               )}
             </button>
