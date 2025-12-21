@@ -333,7 +333,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           setSelectedOrderId(null);
           setSelectedSerialIds([]);
           setFeedback(null);
-        }, 2000);
+        }, 500);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
@@ -377,7 +377,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           setNote('');
           setSelectedOrderId(null);
           setFeedback(null);
-        }, 1500);
+        }, 500);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
@@ -433,7 +433,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           setSelectedOrderId(null);
           setSelectedSerialIds([]);
           setFeedback(null);
-        }, 2000);
+        }, 500);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
@@ -462,7 +462,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           setNote('');
           setSelectedOrderId(null);
           setFeedback(null);
-        }, 1500);
+        }, 500);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
@@ -521,7 +521,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       setTimeout(() => {
         setScannedSet(null);
         setFeedback(null);
-      }, 2000);
+      }, 500);
     } finally {
       setIsProcessingSet(false);
     }
@@ -560,7 +560,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       setTimeout(() => {
         setScannedSet(null);
         setFeedback(null);
-      }, 2000);
+      }, 500);
     } finally {
       setIsProcessingSet(false);
     }
@@ -670,7 +670,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedSet(null);
         setSetItemActions({});
         setFeedback(null);
-      }, 2000);
+      }, 500);
     } finally {
       setIsProcessingSet(false);
     }
@@ -696,7 +696,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     vibrate([100, 50, 100]);
     setFeedback({ type: 'success', msg: `${t('export_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
-    setTimeout(() => { setScannedSet(null); setFeedback(null); }, 1500);
+    setTimeout(() => { setScannedSet(null); setFeedback(null); }, 500);
   };
 
   // Quick import all - 1 of each product
@@ -719,7 +719,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     vibrate([100, 50, 100]);
     setFeedback({ type: 'success', msg: `${t('import_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
-    setTimeout(() => { setScannedSet(null); setFeedback(null); }, 1500);
+    setTimeout(() => { setScannedSet(null); setFeedback(null); }, 500);
   };
 
   const actionValues = Object.values(setItemActions) as { action: 'EXPORT' | 'IMPORT' | 'NONE'; quantity: number }[];
