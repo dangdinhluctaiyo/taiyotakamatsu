@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
 import { Product, EquipmentSet } from '../types';
@@ -57,9 +58,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   }, [selectedOrderId]);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (showCamera) {
       setTimeout(async () => {
         try {
+          // Check if component is still mounted
+          if (!isMounted) return;
+
           // Use Html5Qrcode directly for auto camera selection
           const html5Qrcode = new (window as any).Html5Qrcode("reader");
           scannerRef.current = html5Qrcode;
@@ -72,20 +78,43 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           );
         } catch (err) {
           console.error("Failed to start camera:", err);
-          setFeedback({ type: 'error', msg: 'カメラを起動できませんでした' });
-          setShowCamera(false);
+          if (isMounted) {
+            setFeedback({ type: 'error', msg: 'カメラを起動できませんでした' });
+            setShowCamera(false);
+          }
         }
       }, 100);
     } else {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => { });
-        scannerRef.current = null;
-      }
+      // Safe cleanup when closing camera
+      const stopCamera = async () => {
+        if (scannerRef.current) {
+          try {
+            const scanner = scannerRef.current;
+            scannerRef.current = null;
+            await scanner.stop();
+          } catch (err) {
+            console.log('Camera already stopped or not started:', err);
+          }
+        }
+      };
+      stopCamera();
     }
+
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => { });
-      }
+      isMounted = false;
+      // Cleanup on unmount
+      const cleanupCamera = async () => {
+        if (scannerRef.current) {
+          try {
+            const scanner = scannerRef.current;
+            scannerRef.current = null;
+            await scanner.stop();
+          } catch (err) {
+            console.log('Cleanup: Camera already stopped:', err);
+          }
+        }
+      };
+      cleanupCamera();
     };
   }, [showCamera]);
 
@@ -550,340 +579,336 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     );
   }
 
-  // Product Detail View - Modern Design
-  if (scannedProduct && !feedback?.type) {
-    const availPercent = (scannedProduct.currentPhysicalStock / scannedProduct.totalOwned) * 100;
+  // Product Detail View - Simplified & Optimized for Mobile
+  if (scannedProduct) {
     const onRent = scannedProduct.totalOwned - scannedProduct.currentPhysicalStock;
     const isLow = scannedProduct.currentPhysicalStock <= 2;
     const isOut = scannedProduct.currentPhysicalStock === 0;
+    const canExport = quantity <= scannedProduct.currentPhysicalStock && scannedProduct.currentPhysicalStock > 0;
 
-    return (
-      <div className="min-h-screen bg-slate-100">
-        {/* Header with Product Image */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent z-10" />
-          <img
-            src={scannedProduct.imageUrl}
-            alt={scannedProduct.name}
-            className="w-full h-56 md:h-72 object-cover"
-          />
-          <button
-            onClick={() => setScannedProduct(null)}
-            className="absolute top-4 left-4 z-20 bg-white/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-white/30 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          {/* Product Badge */}
-          <div className="absolute bottom-4 left-4 right-4 z-20">
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="inline-block px-2 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-medium rounded-lg mb-2">
-                  {scannedProduct.code}
-                </span>
-                <h1 className="text-2xl font-bold text-white drop-shadow-lg">{scannedProduct.name}</h1>
-              </div>
-              <div className={`px-3 py-1.5 rounded-xl text-sm font-bold ${isOut ? 'bg-red-500 text-white' : isLow ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}`}>
-                {isOut ? t('out_of_stock') : isLow ? t('low_stock') : t('available')}
-              </div>
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+        {/* Compact Header */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 safe-area-top">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setScannedProduct(null)}
+              className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold truncate">{scannedProduct.name}</h1>
+              <p className="text-slate-400 text-sm">{scannedProduct.code}</p>
+            </div>
+            {/* Status Badge */}
+            <div className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}>
+              {isOut ? t('out_of_stock') : isLow ? t('low_stock') : `${scannedProduct.currentPhysicalStock} ${t('in_stock')}`}
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="px-4 -mt-4 relative z-30 pb-32">
-          {/* Stock Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-slate-500">{t('current_stock_label')}</p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className={`text-4xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
-                    {scannedProduct.currentPhysicalStock}
-                  </span>
-                  <span className="text-slate-400">/ {scannedProduct.totalOwned}</span>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto bg-slate-50">
+          <div className="p-4 space-y-4">
+
+            {/* Product Image & Stock Info */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="flex">
+                <img
+                  src={scannedProduct.imageUrl}
+                  alt={scannedProduct.name}
+                  className="w-24 h-24 object-cover bg-slate-100"
+                />
+                <div className="flex-1 p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t('current_stock_label')}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-3xl font-bold ${isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}`}>
+                        {scannedProduct.currentPhysicalStock}
+                      </span>
+                      <span className="text-slate-400 text-lg">/ {scannedProduct.totalOwned}</span>
+                    </div>
+                  </div>
+                  {onRent > 0 && (
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500 mb-1">{t('on_rent')}</p>
+                      <p className="text-2xl font-bold text-blue-600">{onRent}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-slate-500">{t('on_rent')}</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{onRent}</p>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all rounded-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}
-                style={{ width: `${availPercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-xs text-slate-400">
-              <span>{t('available')}: {scannedProduct.currentPhysicalStock}</span>
-              <span>{t('on_rent')}: {onRent}</span>
-            </div>
-          </div>
-
-          {/* Location Banner - Prominent display for warehouse staff */}
-          {scannedProduct.location && (
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-5 mb-4 text-white">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Box className="w-7 h-7" />
+              {/* Location */}
+              {scannedProduct.location && (
+                <div className="px-4 py-3 bg-indigo-50 border-t flex items-center gap-3">
+                  <Box className="w-5 h-5 text-indigo-600" />
+                  <div>
+                    <p className="text-xs text-indigo-500">{t('location') || 'Vị trí'}</p>
+                    <p className="font-bold text-indigo-700">{scannedProduct.location}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-indigo-200 text-sm font-medium">{t('location') || 'Vị trí kho'}</p>
-                  <p className="text-2xl font-bold tracking-wide">{scannedProduct.location}</p>
-                </div>
-              </div>
+              )}
             </div>
-          )}
 
-          {/* Quantity Selector */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4">
-            <label className="text-sm font-medium text-slate-700 mb-3 block">{t('quantity')}</label>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
-              >
-                <Minus className="w-6 h-6 text-slate-600" />
-              </button>
-              <div className="flex-1 relative">
+            {/* Quantity Selector - Larger & More Prominent */}
+            <div className="bg-white rounded-2xl shadow-sm p-4">
+              <label className="text-sm font-medium text-slate-600 mb-3 block text-center">{t('quantity')}</label>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
+                >
+                  <Minus className="w-8 h-8 text-slate-600" />
+                </button>
                 <input
                   type="number"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  className="w-full text-center text-3xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                  className="w-24 text-center text-4xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
                   min={1}
                 />
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
+                >
+                  <Plus className="w-8 h-8 text-slate-600" />
+                </button>
               </div>
+              {/* Quick quantity buttons */}
+              <div className="flex gap-2 mt-4">
+                {[1, 5, 10, 20].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setQuantity(n)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${quantity === n ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Optional: Order Link (Collapsible) */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
+                onClick={() => setShowOrderSelect(!showOrderSelect)}
+                className="w-full p-4 flex items-center justify-between text-left"
               >
-                <Plus className="w-6 h-6 text-slate-600" />
-              </button>
-            </div>
-
-            {/* Quick quantity buttons */}
-            <div className="flex gap-2 mt-3">
-              {[1, 5, 10, 20].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setQuantity(n)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${quantity === n ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Order Link & Note */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 space-y-4">
-            {/* Order Select */}
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
-                <FileText className="w-4 h-4" /> {t('link_to_order')}
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowOrderSelect(!showOrderSelect)}
-                  className="w-full p-3 border-2 border-slate-200 rounded-xl text-left flex items-center justify-between hover:border-slate-300 transition-all"
-                >
-                  <span className={selectedOrderId ? 'text-slate-800' : 'text-slate-400'}>
-                    {selectedOrderId
-                      ? `#${selectedOrderId} - ${db.customers.find(c => c.id === db.orders.find(o => o.id === selectedOrderId)?.customerId)?.name}`
-                      : t('no_order_link')
-                    }
-                  </span>
-                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showOrderSelect ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showOrderSelect && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
-                    <button
-                      onClick={() => { setSelectedOrderId(null); setShowOrderSelect(false); }}
-                      className="w-full p-3 text-left hover:bg-slate-50 text-slate-500"
-                    >
-                      {t('no_link')}
-                    </button>
-                    {activeOrders.map(o => {
-                      const customer = db.customers.find(c => c.id === o.customerId);
-                      return (
-                        <button
-                          key={o.id}
-                          onClick={() => { setSelectedOrderId(o.id); setShowOrderSelect(false); }}
-                          className="w-full p-3 text-left hover:bg-blue-50 flex items-center justify-between"
-                        >
-                          <span>#{o.id} - {customer?.name}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${o.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {o.status === 'ACTIVE' ? t('renting_status') : t('booked_status')}
-                          </span>
-                        </button>
-                      );
-                    })}
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{t('link_to_order')}</p>
+                    <p className="text-xs text-slate-400">
+                      {selectedOrderId
+                        ? `#${selectedOrderId} - ${db.customers.find(c => c.id === db.orders.find(o => o.id === selectedOrderId)?.customerId)?.name}`
+                        : t('no_order_link')
+                      }
+                    </p>
                   </div>
-                )}
-              </div>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showOrderSelect ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showOrderSelect && (
+                <div className="border-t max-h-40 overflow-y-auto">
+                  <button
+                    onClick={() => { setSelectedOrderId(null); setShowOrderSelect(false); }}
+                    className="w-full p-3 text-left hover:bg-slate-50 text-slate-500 text-sm"
+                  >
+                    {t('no_link')}
+                  </button>
+                  {activeOrders.map(o => {
+                    const customer = db.customers.find(c => c.id === o.customerId);
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => { setSelectedOrderId(o.id); setShowOrderSelect(false); }}
+                        className="w-full p-3 text-left hover:bg-blue-50 flex items-center justify-between text-sm"
+                      >
+                        <span>#{o.id} - {customer?.name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${o.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {o.status === 'ACTIVE' ? t('renting_status') : t('booked_status')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Note */}
-            <div>
-              <label className="text-sm font-medium text-slate-700 mb-2 block">{t('note')}</label>
+            {/* Note Input */}
+            <div className="bg-white rounded-2xl shadow-sm p-4">
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder={t('note_placeholder')}
-                className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                placeholder={t('note_placeholder') || 'Ghi chú (tùy chọn)...'}
+                className="w-full p-3 bg-slate-50 border-2 border-transparent rounded-xl focus:border-blue-500 focus:bg-white outline-none transition-all text-sm"
               />
             </div>
 
-            {/* Staff Info */}
+            {/* Staff Badge */}
             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-xs text-blue-600">{t('performed_by')}</p>
-                <p className="font-semibold text-blue-800">{currentStaff?.name}</p>
+                <p className="text-xs text-blue-500">{t('performed_by')}</p>
+                <p className="font-semibold text-blue-800 text-sm">{currentStaff?.name}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Fixed Action Buttons - above mobile nav */}
-        <div className="fixed bottom-20 md:bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-4 z-40">
-          <div className="max-w-lg mx-auto grid grid-cols-2 gap-3">
+        {/* Fixed Bottom Actions */}
+        <div className="flex-shrink-0 bg-white border-t shadow-lg p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)]">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleImport}
-              className="py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 active:scale-[0.98] transition-all"
+              className="py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 active:scale-[0.98] transition-all"
             >
-              <ArrowDownCircle className="w-5 h-5" /> {t('import_to_stock')}
+              <ArrowDownCircle className="w-6 h-6" />
+              <span>{t('import_to_stock')}</span>
             </button>
             <button
               onClick={handleExport}
-              disabled={quantity > scannedProduct.currentPhysicalStock}
-              className="py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              disabled={!canExport}
+              className="py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:from-slate-400 disabled:to-slate-500"
             >
-              <ArrowUpCircle className="w-5 h-5" /> {t('export_from_stock')}
+              <ArrowUpCircle className="w-6 h-6" />
+              <span>{t('export_from_stock')}</span>
             </button>
           </div>
+          {/* Warning if can't export */}
+          {!canExport && (
+            <p className="text-center text-xs text-red-500 mt-2">
+              {isOut ? t('out_of_stock') : `${t('not_enough_stock')} (${t('available')}: ${scannedProduct.currentPhysicalStock})`}
+            </p>
+          )}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
+
   // Main Scanner View
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white px-4 pt-4 pb-8 md:px-8">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <Scan className="w-6 h-6" />
+    <div className="bg-slate-50 md:min-h-screen">
+      {/* Fixed Top Section on Mobile */}
+      <div className="md:relative">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white px-4 pt-4 pb-8 md:px-8">
+          <div className="max-w-lg mx-auto">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-white/10 rounded-xl">
+                <Scan className="w-6 h-6" />
+              </div>
+              <h1 className="text-xl font-bold">{t('scanner_title')}</h1>
             </div>
-            <h1 className="text-xl font-bold">{t('scanner_title')}</h1>
+            <p className="text-slate-400 text-sm">{t('scan_or_search')}</p>
           </div>
-          <p className="text-slate-400 text-sm">{t('scan_or_search')}</p>
+        </div>
+
+        <div className="px-4 -mt-4 pb-4 md:pb-0">
+          <div className="max-w-lg mx-auto space-y-4">
+
+            {/* Camera Button / Scanner */}
+            {!showCamera ? (
+              <button
+                onClick={() => setShowCamera(true)}
+                className="w-full bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 hover:shadow-xl transition-all group"
+              >
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                  <Camera className="w-7 h-7 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-800">{t('open_camera')}</p>
+                  <p className="text-sm text-slate-500">{t('scan_qr_barcode')}</p>
+                </div>
+              </button>
+            ) : (
+              <div className="bg-black rounded-2xl overflow-hidden shadow-xl relative">
+                <div id="reader" className="w-full"></div>
+                <button
+                  onClick={() => setShowCamera(false)}
+                  className="absolute top-3 right-3 bg-white/20 backdrop-blur text-white p-2 rounded-full hover:bg-red-500 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Search Box */}
+            <div className="bg-white p-4 rounded-2xl shadow-lg">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={inputQuery}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setInputQuery(value);
+                      // Auto-search as user types
+                      if (value.trim()) {
+                        handleSearch(value);
+                      } else {
+                        setSearchResults([]);
+                        setFeedback(null);
+                      }
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder={t('enter_product')}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                {inputQuery.trim() ? (
+                  <button
+                    onClick={() => {
+                      setInputQuery('');
+                      setSearchResults([]);
+                      setFeedback(null);
+                    }}
+                    className="px-6 bg-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-300 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    {t('clear') || 'Xóa'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSearch()}
+                    className="px-6 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all"
+                  >
+                    {t('find')}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Feedback */}
+            {feedback && (
+              <div className={`p-4 rounded-2xl flex items-center gap-3 ${feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {feedback.type === 'success' ? <CheckCircle className="w-6 h-6 shrink-0" /> : <AlertCircle className="w-6 h-6 shrink-0" />}
+                <p className="font-medium">{feedback.msg}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-4 pb-24 md:pb-8">
-        <div className="max-w-lg mx-auto space-y-4">
-
-          {/* Camera Button / Scanner */}
-          {!showCamera ? (
-            <button
-              onClick={() => setShowCamera(true)}
-              className="w-full bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 hover:shadow-xl transition-all group"
-            >
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                <Camera className="w-7 h-7 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-slate-800">{t('open_camera')}</p>
-                <p className="text-sm text-slate-500">{t('scan_qr_barcode')}</p>
-              </div>
-            </button>
-          ) : (
-            <div className="bg-black rounded-2xl overflow-hidden shadow-xl relative">
-              <div id="reader" className="w-full"></div>
-              <button
-                onClick={() => setShowCamera(false)}
-                className="absolute top-3 right-3 bg-white/20 backdrop-blur text-white p-2 rounded-full hover:bg-red-500 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-
-          {/* Search Box */}
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={inputQuery}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setInputQuery(value);
-                    // Auto-search as user types
-                    if (value.trim()) {
-                      handleSearch(value);
-                    } else {
-                      setSearchResults([]);
-                      setFeedback(null);
-                    }
-                  }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder={t('enter_product')}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
-                />
-              </div>
-              {inputQuery.trim() ? (
-                <button
-                  onClick={() => {
-                    setInputQuery('');
-                    setSearchResults([]);
-                    setFeedback(null);
-                  }}
-                  className="px-6 bg-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-300 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  {t('clear') || 'Xóa'}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleSearch()}
-                  className="px-6 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all"
-                >
-                  {t('find')}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Feedback */}
-          {feedback && (
-            <div className={`p-4 rounded-2xl flex items-center gap-3 ${feedback.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-              {feedback.type === 'success' ? <CheckCircle className="w-6 h-6 shrink-0" /> : <AlertCircle className="w-6 h-6 shrink-0" />}
-              <p className="font-medium">{feedback.msg}</p>
-            </div>
-          )}
-
+      {/* Scrollable Product List - with fixed height on mobile */}
+      <div className="px-4 pb-4 md:pb-8">
+        <div className="max-w-lg mx-auto">
           {/* Search Results */}
           {searchResults.length > 0 && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b">
+              <div className="p-4 bg-slate-50 border-b sticky top-0 z-10">
                 <p className="font-medium text-slate-700">{t('select_product_count')} ({searchResults.length})</p>
               </div>
-              <div className="divide-y max-h-64 overflow-y-auto">
+              <div className="divide-y max-h-[40vh] overflow-y-auto">
                 {searchResults.map(p => (
                   <button
                     key={p.id}
@@ -910,14 +935,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           {/* Quick Stock List */}
           {!showCamera && searchResults.length === 0 && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b flex items-center justify-between">
+              <div className="p-4 bg-slate-50 border-b sticky top-0 z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="w-5 h-5 text-slate-500" />
                   <p className="font-medium text-slate-700">{t('equipment_in_stock')}</p>
                 </div>
                 <span className="text-sm text-slate-400">{db.products.length} {t('products_count')}</span>
               </div>
-              <div className="divide-y max-h-80 overflow-y-auto">
+              <div className="divide-y max-h-[40vh] overflow-y-auto">
                 {db.products.map(p => {
                   const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
                   const isOut = p.currentPhysicalStock === 0;

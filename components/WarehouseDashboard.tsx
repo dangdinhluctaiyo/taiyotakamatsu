@@ -185,9 +185,9 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header - Compact */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 pt-4 pb-16">
+        <div className="h-screen flex flex-col bg-gray-50 md:block md:h-auto md:min-h-screen">
+            {/* Fixed Header - Compact */}
+            <div className="flex-shrink-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 pt-4 pb-16">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-lg font-bold">{t('warehouse_dashboard') || 'Quản lý Kho'}</h1>
@@ -202,68 +202,149 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="px-4 -mt-10 pb-28">
-                <div className="max-w-2xl mx-auto space-y-4">
-
-                    {/* Tabs - Modern Segmented Control */}
-                    <div className="bg-white rounded-2xl shadow-lg p-1.5 flex gap-1">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key as any)}
-                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === tab.key
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'text-gray-500 hover:bg-gray-100'
-                                    }`}
-                            >
-                                <tab.icon className="w-5 h-5" />
-                                <span className="hidden sm:inline">{tab.label}</span>
-                                {tab.count > 0 && (
-                                    <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${activeTab === tab.key
-                                        ? 'bg-white text-indigo-600'
-                                        : 'bg-red-500 text-white'
-                                        }`}>
-                                        {tab.count}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Scanner Tab */}
-                    {activeTab === 'scanner' && (
-                        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                            <ScannerEmbed refreshApp={refreshApp} />
+            {/* Fixed Tabs and Content */}
+            <div className="flex-1 flex flex-col -mt-10 overflow-hidden md:overflow-visible">
+                <div className="px-4 flex-shrink-0">
+                    <div className="max-w-2xl mx-auto">
+                        {/* Tabs - Modern Segmented Control */}
+                        <div className="bg-white rounded-2xl shadow-lg p-1.5 flex gap-1">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key as any)}
+                                    className={`flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === tab.key
+                                        ? 'bg-indigo-600 text-white shadow-md'
+                                        : 'text-gray-500 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <tab.icon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">{tab.label}</span>
+                                    {tab.count > 0 && (
+                                        <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${activeTab === tab.key
+                                            ? 'bg-white text-indigo-600'
+                                            : 'bg-red-500 text-white'
+                                            }`}>
+                                            {tab.count}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                </div>
 
-                    {/* Prepare Tab */}
-                    {activeTab === 'prepare' && (
-                        <div className="space-y-3">
-                            {loading ? (
-                                <LoadingCard />
-                            ) : prepareTasks.length === 0 ? (
-                                <EmptyCard
-                                    icon={<CheckCircle className="w-12 h-12 text-green-500" />}
-                                    title={t('no_tasks') || 'Không có việc cần làm'}
-                                    subtitle={t('all_prepared') || 'Tất cả đơn hàng đã được chuẩn bị'}
-                                />
-                            ) : (
-                                prepareTasks.map((task, idx) => {
-                                    const daysUntil = getDaysUntil(task.rentalStartDate);
-                                    const isUrgent = daysUntil <= 1;
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-28 md:pb-8">
+                    <div className="max-w-2xl mx-auto space-y-4">
 
-                                    return (
-                                        <div key={idx} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${isUrgent ? 'ring-2 ring-red-400' : ''}`}>
-                                            {/* Urgency Bar */}
-                                            <div className={`h-1 ${isUrgent ? 'bg-red-500' : daysUntil <= 2 ? 'bg-amber-400' : 'bg-green-400'}`} />
+                        {/* Scanner Tab */}
+                        {activeTab === 'scanner' && (
+                            <div className="bg-white rounded-2xl shadow-lg">
+                                <ScannerEmbed refreshApp={refreshApp} />
+                            </div>
+                        )}
+
+                        {/* Prepare Tab */}
+                        {activeTab === 'prepare' && (
+                            <div className="space-y-3">
+                                {loading ? (
+                                    <LoadingCard />
+                                ) : prepareTasks.length === 0 ? (
+                                    <EmptyCard
+                                        icon={<CheckCircle className="w-12 h-12 text-green-500" />}
+                                        title={t('no_tasks') || 'Không có việc cần làm'}
+                                        subtitle={t('all_prepared') || 'Tất cả đơn hàng đã được chuẩn bị'}
+                                    />
+                                ) : (
+                                    prepareTasks.map((task, idx) => {
+                                        const daysUntil = getDaysUntil(task.rentalStartDate);
+                                        const isUrgent = daysUntil <= 1;
+
+                                        return (
+                                            <div key={idx} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${isUrgent ? 'ring-2 ring-red-400' : ''}`}>
+                                                {/* Urgency Bar */}
+                                                <div className={`h-1 ${isUrgent ? 'bg-red-500' : daysUntil <= 2 ? 'bg-amber-400' : 'bg-green-400'}`} />
+
+                                                <div className="p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        {/* Icon */}
+                                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isUrgent ? 'bg-red-100' : 'bg-amber-100'}`}>
+                                                            <Package className={`w-6 h-6 ${isUrgent ? 'text-red-600' : 'text-amber-600'}`} />
+                                                        </div>
+
+                                                        {/* Content */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between">
+                                                                <div>
+                                                                    <h3 className="font-bold text-gray-900 text-base">{task.productName}</h3>
+                                                                    <p className="text-xs text-gray-400 font-mono">{task.productCode}</p>
+                                                                </div>
+                                                                <div className="text-right ml-2">
+                                                                    <p className="text-2xl font-bold text-indigo-600">×{task.quantity}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Tags */}
+                                                            <div className="flex flex-wrap gap-2 mt-3">
+                                                                <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${isUrgent
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : 'bg-gray-100 text-gray-600'
+                                                                    }`}>
+                                                                    <Clock className="w-3.5 h-3.5" />
+                                                                    {isUrgent ? (t('today') + '!') : `${daysUntil} ${t('days_left') || 'ngày'}`}
+                                                                </span>
+                                                                <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
+                                                                    <User className="w-3.5 h-3.5" />
+                                                                    {task.customerName}
+                                                                </span>
+                                                                {task.location && (
+                                                                    <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-medium font-mono">
+                                                                        <MapPin className="w-3.5 h-3.5" />
+                                                                        {task.location}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Action Button */}
+                                                    <button
+                                                        onClick={() => handleMarkPrepared(task)}
+                                                        className="w-full mt-4 py-3 bg-green-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-600 active:scale-[0.98] transition-all shadow-sm"
+                                                    >
+                                                        <CheckCircle className="w-5 h-5" />
+                                                        {t('prepare') || 'Đã chuẩn bị xong'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+
+                        {/* Clean Tab */}
+                        {activeTab === 'clean' && (
+                            <div className="space-y-3">
+                                {loading ? (
+                                    <LoadingCard />
+                                ) : cleanTasks.length === 0 ? (
+                                    <EmptyCard
+                                        icon={<Sparkles className="w-12 h-12 text-blue-500" />}
+                                        title={t('no_dirty_items') || 'Không có thiết bị bẩn'}
+                                        subtitle={t('all_cleaned') || 'Tất cả đã được vệ sinh sạch sẽ'}
+                                    />
+                                ) : (
+                                    cleanTasks.map((task, idx) => (
+                                        <div key={idx} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                                            {/* Blue accent bar */}
+                                            <div className="h-1 bg-blue-500" />
 
                                             <div className="p-4">
                                                 <div className="flex items-start gap-3">
                                                     {/* Icon */}
-                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isUrgent ? 'bg-red-100' : 'bg-amber-100'}`}>
-                                                        <Package className={`w-6 h-6 ${isUrgent ? 'text-red-600' : 'text-amber-600'}`} />
+                                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                                                        <Sparkles className="w-6 h-6 text-blue-600" />
                                                     </div>
 
                                                     {/* Content */}
@@ -274,112 +355,38 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                                                                 <p className="text-xs text-gray-400 font-mono">{task.productCode}</p>
                                                             </div>
                                                             <div className="text-right ml-2">
-                                                                <p className="text-2xl font-bold text-indigo-600">×{task.quantity}</p>
+                                                                <p className="text-xs text-gray-400">{t('dirty_qty') || 'Cần VS'}</p>
+                                                                <p className="text-2xl font-bold text-blue-600">×{task.dirtyQty}</p>
                                                             </div>
                                                         </div>
 
-                                                        {/* Tags */}
-                                                        <div className="flex flex-wrap gap-2 mt-3">
-                                                            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium ${isUrgent
-                                                                ? 'bg-red-100 text-red-700'
-                                                                : 'bg-gray-100 text-gray-600'
-                                                                }`}>
-                                                                <Clock className="w-3.5 h-3.5" />
-                                                                {isUrgent ? (t('today') + '!') : `${daysUntil} ${t('days_left') || 'ngày'}`}
-                                                            </span>
-                                                            <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
-                                                                <User className="w-3.5 h-3.5" />
-                                                                {task.customerName}
-                                                            </span>
-                                                            {task.location && (
+                                                        {/* Location tag */}
+                                                        {task.location && (
+                                                            <div className="mt-3">
                                                                 <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-medium font-mono">
                                                                     <MapPin className="w-3.5 h-3.5" />
                                                                     {task.location}
                                                                 </span>
-                                                            )}
-                                                        </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
                                                 {/* Action Button */}
                                                 <button
-                                                    onClick={() => handleMarkPrepared(task)}
-                                                    className="w-full mt-4 py-3 bg-green-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-600 active:scale-[0.98] transition-all shadow-sm"
+                                                    onClick={() => handleMarkCleaned(task)}
+                                                    className="w-full mt-4 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-600 active:scale-[0.98] transition-all shadow-sm"
                                                 >
-                                                    <CheckCircle className="w-5 h-5" />
-                                                    {t('prepare') || 'Đã chuẩn bị xong'}
+                                                    <Sparkles className="w-5 h-5" />
+                                                    {t('clean_all') || 'Đã vệ sinh xong'}
                                                 </button>
                                             </div>
                                         </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    )}
-
-                    {/* Clean Tab */}
-                    {activeTab === 'clean' && (
-                        <div className="space-y-3">
-                            {loading ? (
-                                <LoadingCard />
-                            ) : cleanTasks.length === 0 ? (
-                                <EmptyCard
-                                    icon={<Sparkles className="w-12 h-12 text-blue-500" />}
-                                    title={t('no_dirty_items') || 'Không có thiết bị bẩn'}
-                                    subtitle={t('all_cleaned') || 'Tất cả đã được vệ sinh sạch sẽ'}
-                                />
-                            ) : (
-                                cleanTasks.map((task, idx) => (
-                                    <div key={idx} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                                        {/* Blue accent bar */}
-                                        <div className="h-1 bg-blue-500" />
-
-                                        <div className="p-4">
-                                            <div className="flex items-start gap-3">
-                                                {/* Icon */}
-                                                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-                                                    <Sparkles className="w-6 h-6 text-blue-600" />
-                                                </div>
-
-                                                {/* Content */}
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between">
-                                                        <div>
-                                                            <h3 className="font-bold text-gray-900 text-base">{task.productName}</h3>
-                                                            <p className="text-xs text-gray-400 font-mono">{task.productCode}</p>
-                                                        </div>
-                                                        <div className="text-right ml-2">
-                                                            <p className="text-xs text-gray-400">{t('dirty_qty') || 'Cần VS'}</p>
-                                                            <p className="text-2xl font-bold text-blue-600">×{task.dirtyQty}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Location tag */}
-                                                    {task.location && (
-                                                        <div className="mt-3">
-                                                            <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-medium font-mono">
-                                                                <MapPin className="w-3.5 h-3.5" />
-                                                                {task.location}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Action Button */}
-                                            <button
-                                                onClick={() => handleMarkCleaned(task)}
-                                                className="w-full mt-4 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-600 active:scale-[0.98] transition-all shadow-sm"
-                                            >
-                                                <Sparkles className="w-5 h-5" />
-                                                {t('clean_all') || 'Đã vệ sinh xong'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
