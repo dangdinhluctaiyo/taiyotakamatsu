@@ -323,17 +323,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           note: `出庫時清掃済み / Đã xuất kho (${serialNumbers})`
         });
 
-        setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${exportQty} ${scannedProduct.name} (${serialNumbers})` });
         await refreshApp();
 
-        setTimeout(() => {
-          setScannedProduct(null);
-          setQuantity(1);
-          setNote('');
-          setSelectedOrderId(null);
-          setSelectedSerialIds([]);
-          setFeedback(null);
-        }, 500);
+        // Reset immediately
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
+        setSelectedSerialIds([]);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
@@ -368,16 +365,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           note: `出庫時清掃済み / Đã xuất kho`
         });
 
-        setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${quantity} ${scannedProduct.name}` });
         await refreshApp();
 
-        setTimeout(() => {
-          setScannedProduct(null);
-          setQuantity(1);
-          setNote('');
-          setSelectedOrderId(null);
-          setFeedback(null);
-        }, 500);
+        // Reset immediately
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
@@ -423,17 +417,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           .map(s => s.serialNumber)
           .join(', ');
 
-        setFeedback({ type: 'success', msg: `Nhập kho ${importQty} ${scannedProduct.name} (${serialNumbers})` });
         await refreshApp();
 
-        setTimeout(() => {
-          setScannedProduct(null);
-          setQuantity(1);
-          setNote('');
-          setSelectedOrderId(null);
-          setSelectedSerialIds([]);
-          setFeedback(null);
-        }, 500);
+        // Reset immediately
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
+        setSelectedSerialIds([]);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
@@ -453,16 +444,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, note || t('import_stock'));
         }
 
-        setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
         await refreshApp();
 
-        setTimeout(() => {
-          setScannedProduct(null);
-          setQuantity(1);
-          setNote('');
-          setSelectedOrderId(null);
-          setFeedback(null);
-        }, 500);
+        // Reset immediately
+        setScannedProduct(null);
+        setQuantity(1);
+        setNote('');
+        setSelectedOrderId(null);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
