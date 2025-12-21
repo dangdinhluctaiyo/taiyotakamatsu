@@ -376,12 +376,12 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       try {
         console.log('Importing serials:', selectedSerialIds);
 
-        // Update each selected serial to DIRTY (needs cleaning)
+        // Update each selected serial to AVAILABLE (ready to use again)
         for (const serialId of selectedSerialIds) {
           await supabase
             .from('device_serials')
             .update({
-              status: 'DIRTY',
+              status: 'AVAILABLE',
               order_id: null // Clear order reference
             })
             .eq('id', serialId);
