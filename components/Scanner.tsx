@@ -312,6 +312,17 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           .map(s => s.serialNumber)
           .join(', ');
 
+        // Also create CLEAN log to remove from cleaning tasks
+        await supabase.from('inventory_logs').insert({
+          product_id: scannedProduct.id,
+          order_id: selectedOrderId || null,
+          action_type: 'CLEAN',
+          quantity: exportQty,
+          staff_id: db.currentUser?.id,
+          staff_name: db.currentUser?.name,
+          note: `出庫時清掃済み / Đã xuất kho (${serialNumbers})`
+        });
+
         setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${exportQty} ${scannedProduct.name} (${serialNumbers})` });
         await refreshApp();
 
@@ -345,6 +356,17 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           console.log('Updating stock to:', newStock);
           await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, note || t('export_stock'));
         }
+
+        // Also create CLEAN log to remove from cleaning tasks
+        await supabase.from('inventory_logs').insert({
+          product_id: scannedProduct.id,
+          order_id: selectedOrderId || null,
+          action_type: 'CLEAN',
+          quantity: quantity,
+          staff_id: db.currentUser?.id,
+          staff_name: db.currentUser?.name,
+          note: `出庫時清掃済み / Đã xuất kho`
+        });
 
         setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${quantity} ${scannedProduct.name}` });
         await refreshApp();
