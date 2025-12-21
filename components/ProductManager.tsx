@@ -58,7 +58,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const handleAddNew = () => {
     if (!isAdmin) { error(t('only_admin_can_add')); return; }
     setEditingProduct(null);
-    setFormData({ name: '', code: '', category: 'Thiết bị', pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '' });
+    setFormData({ name: '', code: '', category: 'Thiết bị', pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '', isSerialized: false });
     setIsModalOpen(true);
   };
 
@@ -85,7 +85,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       images: formData.images || [],
       location: formData.location || '',
       specs: formData.specs || '',
-      isSerialized: editingProduct ? editingProduct.isSerialized : false
+      isSerialized: formData.isSerialized || false
     };
     await db.saveProduct(productToSave);
     refreshApp();
@@ -500,6 +500,22 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><FileText className="w-3 h-3 inline" /> {t('specs')}</label>
                 <textarea className="w-full border p-2.5 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/20" rows={3} value={formData.specs} onChange={e => setFormData({ ...formData, specs: e.target.value })} placeholder="Chất liệu: ...&#10;Kích thước: ..." />
               </div>
+
+              {/* Serial Tracking Toggle */}
+              <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl">
+                <div>
+                  <p className="font-medium text-slate-800">Quản lý theo Serial</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Theo dõi từng thiết bị riêng lẻ bằng số serial</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, isSerialized: !formData.isSerialized })}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${formData.isSerialized ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${formData.isSerialized ? 'translate-x-6' : ''}`} />
+                </button>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><ImageIcon className="w-3 h-3 inline" /> {t('images')}</label>
                 <div className="flex gap-2 mb-2">
