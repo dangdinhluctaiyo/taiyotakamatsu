@@ -90,3 +90,13 @@ export interface EquipmentSet {
   note?: string;
   createdAt: string;
 }
+
+// Device Serial - Theo dõi từng thiết bị theo số serial
+export interface DeviceSerial {
+  id: number;
+  productId: number;
+  serialNumber: string;
+  status: 'AVAILABLE' | 'RESERVED' | 'ON_RENT' | 'DIRTY' | 'BROKEN';
+  orderId?: number;       // Đơn hàng đang thuê (nếu ON_RENT)
+  customerName?: string;  // Tên khách (joined từ order)
+}

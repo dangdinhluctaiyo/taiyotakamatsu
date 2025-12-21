@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../services/db';
+import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
-import { Product, EquipmentSet } from '../types';
-import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode } from 'lucide-react';
+import { Product, EquipmentSet, DeviceSerial } from '../types';
+import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode, Tag, Check } from 'lucide-react';
 
 declare const Html5QrcodeScanner: any;
 
@@ -27,8 +28,91 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [isProcessingSet, setIsProcessingSet] = useState(false);
   const scannerRef = useRef<any>(null);
 
+  // Serial selection states
+  const [availableSerials, setAvailableSerials] = useState<DeviceSerial[]>([]);
+  const [selectedSerialIds, setSelectedSerialIds] = useState<number[]>([]);
+  const [loadingSerials, setLoadingSerials] = useState(false);
+  const [serialSearchTerm, setSerialSearchTerm] = useState('');
+
   const currentStaff = db.currentUser;
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
+
+  // Load serials when a serialized product is scanned
+  const loadSerials = async (productId: number, mode: 'export' | 'import') => {
+    setLoadingSerials(true);
+    setAvailableSerials([]);
+    setSelectedSerialIds([]);
+    try {
+      // Filter by status based on mode
+      const statusFilter = mode === 'export' ? 'AVAILABLE' : 'ON_RENT';
+
+      const { data, error } = await supabase
+        .from('device_serials')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('status', statusFilter)
+        .order('serial_number', { ascending: true });
+
+      if (error) {
+        console.error('Error loading serials:', error);
+        // Fallback to localStorage
+        const storedSerials = localStorage.getItem(`serials_${productId}`);
+        if (storedSerials) {
+          const parsed = JSON.parse(storedSerials) as DeviceSerial[];
+          setAvailableSerials(parsed.filter(s => s.status === statusFilter));
+        }
+      } else if (data) {
+        const serials: DeviceSerial[] = data.map(d => ({
+          id: d.id,
+          productId: d.product_id,
+          serialNumber: d.serial_number,
+          status: d.status,
+          orderId: d.order_id
+        }));
+        setAvailableSerials(serials);
+      }
+    } catch (e) {
+      console.error('Error loading serials:', e);
+    } finally {
+      setLoadingSerials(false);
+    }
+  };
+
+  // Load serials when scannedProduct changes and is serialized
+  useEffect(() => {
+    if (scannedProduct?.isSerialized) {
+      loadSerials(scannedProduct.id, 'export');
+    } else {
+      setAvailableSerials([]);
+      setSelectedSerialIds([]);
+    }
+  }, [scannedProduct?.id, scannedProduct?.isSerialized]);
+
+  // Toggle serial selection
+  const toggleSerialSelection = (serialId: number) => {
+    setSelectedSerialIds(prev =>
+      prev.includes(serialId)
+        ? prev.filter(id => id !== serialId)
+        : [...prev, serialId]
+    );
+  };
+
+  // Select all serials
+  const selectAllSerials = () => {
+    const filteredIds = filteredSerials.map(s => s.id);
+    setSelectedSerialIds(filteredIds);
+  };
+
+  // Clear all selections
+  const clearSerialSelection = () => {
+    setSelectedSerialIds([]);
+  };
+
+  // Filter serials by search term
+  const filteredSerials = availableSerials.filter(s =>
+    s.serialNumber.toLowerCase().includes(serialSearchTerm.toLowerCase())
+  );
+
 
   // Handle pending scan code from deep link
   useEffect(() => {
@@ -190,68 +274,189 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   };
 
   const handleExport = async () => {
-    if (!scannedProduct || quantity <= 0) return;
-    if (quantity > scannedProduct.currentPhysicalStock) {
-      setFeedback({ type: 'error', msg: t('not_enough_stock') });
-      return;
-    }
+    if (!scannedProduct) return;
 
-    try {
-      console.log('Exporting:', scannedProduct.id, quantity, selectedOrderId);
-
-      if (selectedOrderId) {
-        await db.exportStock(selectedOrderId, scannedProduct.id, quantity, note || t('export_stock'));
-      } else {
-        // Direct update to Supabase
-        const newStock = scannedProduct.currentPhysicalStock - quantity;
-        console.log('Updating stock to:', newStock);
-        await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, note || t('export_stock'));
+    // For serialized products, use selected serials
+    if (scannedProduct.isSerialized) {
+      if (selectedSerialIds.length === 0) {
+        setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để xuất' });
+        return;
       }
 
-      setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${quantity} ${scannedProduct.name}` });
-      await refreshApp();
+      try {
+        console.log('Exporting serials:', selectedSerialIds);
 
-      setTimeout(() => {
-        setScannedProduct(null);
-        setQuantity(1);
-        setNote('');
-        setSelectedOrderId(null);
-        setFeedback(null);
-      }, 1500);
-    } catch (e: any) {
-      console.error('Export error:', e);
-      setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+        // Update each selected serial to ON_RENT
+        for (const serialId of selectedSerialIds) {
+          await supabase
+            .from('device_serials')
+            .update({
+              status: 'ON_RENT',
+              order_id: selectedOrderId || null
+            })
+            .eq('id', serialId);
+        }
+
+        // Update stock count
+        const exportQty = selectedSerialIds.length;
+        if (selectedOrderId) {
+          await db.exportStock(selectedOrderId, scannedProduct.id, exportQty, note || t('export_stock'));
+        } else {
+          const newStock = scannedProduct.currentPhysicalStock - exportQty;
+          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', exportQty, note || t('export_stock'));
+        }
+
+        const serialNumbers = availableSerials
+          .filter(s => selectedSerialIds.includes(s.id))
+          .map(s => s.serialNumber)
+          .join(', ');
+
+        setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${exportQty} ${scannedProduct.name} (${serialNumbers})` });
+        await refreshApp();
+
+        setTimeout(() => {
+          setScannedProduct(null);
+          setQuantity(1);
+          setNote('');
+          setSelectedOrderId(null);
+          setSelectedSerialIds([]);
+          setFeedback(null);
+        }, 2000);
+      } catch (e: any) {
+        console.error('Export error:', e);
+        setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+      }
+    } else {
+      // Non-serialized product: use quantity
+      if (quantity <= 0) return;
+      if (quantity > scannedProduct.currentPhysicalStock) {
+        setFeedback({ type: 'error', msg: t('not_enough_stock') });
+        return;
+      }
+
+      try {
+        console.log('Exporting:', scannedProduct.id, quantity, selectedOrderId);
+
+        if (selectedOrderId) {
+          await db.exportStock(selectedOrderId, scannedProduct.id, quantity, note || t('export_stock'));
+        } else {
+          const newStock = scannedProduct.currentPhysicalStock - quantity;
+          console.log('Updating stock to:', newStock);
+          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, note || t('export_stock'));
+        }
+
+        setFeedback({ type: 'success', msg: `${t('export_stock_success')} ${quantity} ${scannedProduct.name}` });
+        await refreshApp();
+
+        setTimeout(() => {
+          setScannedProduct(null);
+          setQuantity(1);
+          setNote('');
+          setSelectedOrderId(null);
+          setFeedback(null);
+        }, 1500);
+      } catch (e: any) {
+        console.error('Export error:', e);
+        setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+      }
     }
   };
 
   const handleImport = async () => {
-    if (!scannedProduct || quantity <= 0) return;
+    if (!scannedProduct) return;
 
-    try {
-      console.log('Importing:', scannedProduct.id, quantity, selectedOrderId);
-
-      if (selectedOrderId) {
-        await db.importStock(selectedOrderId, scannedProduct.id, quantity, note || t('import_stock'));
-      } else {
-        // Direct update to Supabase
-        const newStock = scannedProduct.currentPhysicalStock + quantity;
-        console.log('Updating stock to:', newStock);
-        await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, note || t('import_stock'));
+    // For serialized products, use selected serials
+    if (scannedProduct.isSerialized) {
+      if (selectedSerialIds.length === 0) {
+        setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để nhập lại' });
+        return;
       }
 
-      setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
-      await refreshApp();
+      try {
+        console.log('Importing serials:', selectedSerialIds);
 
-      setTimeout(() => {
-        setScannedProduct(null);
-        setQuantity(1);
-        setNote('');
-        setSelectedOrderId(null);
-        setFeedback(null);
-      }, 1500);
-    } catch (e: any) {
-      console.error('Import error:', e);
-      setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+        // Update each selected serial to DIRTY (needs cleaning)
+        for (const serialId of selectedSerialIds) {
+          await supabase
+            .from('device_serials')
+            .update({
+              status: 'DIRTY',
+              order_id: null // Clear order reference
+            })
+            .eq('id', serialId);
+        }
+
+        // Update stock count
+        const importQty = selectedSerialIds.length;
+        if (selectedOrderId) {
+          await db.importStock(selectedOrderId, scannedProduct.id, importQty, note || t('import_stock'));
+        } else {
+          const newStock = scannedProduct.currentPhysicalStock + importQty;
+          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', importQty, note || t('import_stock'));
+        }
+
+        const serialNumbers = availableSerials
+          .filter(s => selectedSerialIds.includes(s.id))
+          .map(s => s.serialNumber)
+          .join(', ');
+
+        setFeedback({ type: 'success', msg: `Nhập kho ${importQty} ${scannedProduct.name} (${serialNumbers})` });
+        await refreshApp();
+
+        setTimeout(() => {
+          setScannedProduct(null);
+          setQuantity(1);
+          setNote('');
+          setSelectedOrderId(null);
+          setSelectedSerialIds([]);
+          setFeedback(null);
+        }, 2000);
+      } catch (e: any) {
+        console.error('Import error:', e);
+        setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+      }
+    } else {
+      // Non-serialized product: use quantity
+      if (quantity <= 0) return;
+
+      try {
+        console.log('Importing:', scannedProduct.id, quantity, selectedOrderId);
+
+        if (selectedOrderId) {
+          await db.importStock(selectedOrderId, scannedProduct.id, quantity, note || t('import_stock'));
+        } else {
+          const newStock = scannedProduct.currentPhysicalStock + quantity;
+          console.log('Updating stock to:', newStock);
+          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, note || t('import_stock'));
+        }
+
+        setFeedback({ type: 'success', msg: `Nhập kho ${quantity} ${scannedProduct.name}` });
+        await refreshApp();
+
+        setTimeout(() => {
+          setScannedProduct(null);
+          setQuantity(1);
+          setNote('');
+          setSelectedOrderId(null);
+          setFeedback(null);
+        }, 1500);
+      } catch (e: any) {
+        console.error('Import error:', e);
+        setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+      }
+    }
+  };
+
+  // Switch mode for serialized products (export loads AVAILABLE, import loads ON_RENT)
+  const switchToImportMode = () => {
+    if (scannedProduct?.isSerialized) {
+      loadSerials(scannedProduct.id, 'import');
+    }
+  };
+
+  const switchToExportMode = () => {
+    if (scannedProduct?.isSerialized) {
+      loadSerials(scannedProduct.id, 'export');
     }
   };
 
@@ -584,7 +789,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     const onRent = scannedProduct.totalOwned - scannedProduct.currentPhysicalStock;
     const isLow = scannedProduct.currentPhysicalStock <= 2;
     const isOut = scannedProduct.currentPhysicalStock === 0;
-    const canExport = quantity <= scannedProduct.currentPhysicalStock && scannedProduct.currentPhysicalStock > 0;
+    // For serialized products, can export if serials are selected; for non-serialized, check quantity
+    const canExport = scannedProduct.isSerialized
+      ? selectedSerialIds.length > 0
+      : (quantity <= scannedProduct.currentPhysicalStock && scannedProduct.currentPhysicalStock > 0);
 
     return createPortal(
       <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
@@ -650,45 +858,145 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               )}
             </div>
 
-            {/* Quantity Selector - Larger & More Prominent */}
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <label className="text-sm font-medium text-slate-600 mb-3 block text-center">{t('quantity')}</label>
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
-                >
-                  <Minus className="w-8 h-8 text-slate-600" />
-                </button>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="w-24 text-center text-4xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                  min={1}
-                />
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
-                >
-                  <Plus className="w-8 h-8 text-slate-600" />
-                </button>
+            {/* Serial Picker for serialized products */}
+            {scannedProduct.isSerialized ? (
+              <div className="bg-white rounded-2xl shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-indigo-600" />
+                    <span className="text-sm font-medium text-slate-700">
+                      Chọn Serial ({selectedSerialIds.length} đã chọn)
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectAllSerials}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Chọn tất cả
+                    </button>
+                    <button
+                      onClick={clearSerialSelection}
+                      className="text-xs text-slate-500 hover:underline"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search serial */}
+                <div className="relative mb-3">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={serialSearchTerm}
+                    onChange={(e) => setSerialSearchTerm(e.target.value)}
+                    placeholder="Tìm serial..."
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border rounded-xl text-sm outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* Serial list */}
+                {loadingSerials ? (
+                  <div className="text-center py-4">
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">Đang tải...</p>
+                  </div>
+                ) : filteredSerials.length === 0 ? (
+                  <div className="text-center py-4">
+                    <Tag className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">
+                      {availableSerials.length === 0
+                        ? "Không có serial sẵn sàng để xuất"
+                        : "Không tìm thấy serial"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {filteredSerials.map(serial => (
+                      <label
+                        key={serial.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${selectedSerialIds.includes(serial.id)
+                          ? 'bg-indigo-50 ring-2 ring-indigo-500'
+                          : 'bg-slate-50 hover:bg-slate-100'
+                          }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center ${selectedSerialIds.includes(serial.id)
+                          ? 'bg-indigo-600'
+                          : 'border-2 border-slate-300'
+                          }`}>
+                          {selectedSerialIds.includes(serial.id) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedSerialIds.includes(serial.id)}
+                          onChange={() => toggleSerialSelection(serial.id)}
+                          className="hidden"
+                        />
+                        <span className="font-mono font-bold text-slate-800">{serial.serialNumber}</span>
+                        {serial.orderId && (
+                          <span className="text-xs text-blue-500 ml-auto">
+                            Đơn #{serial.orderId}
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected count */}
+                {selectedSerialIds.length > 0 && (
+                  <div className="mt-3 pt-3 border-t text-center">
+                    <span className="text-lg font-bold text-indigo-600">
+                      {selectedSerialIds.length}
+                    </span>
+                    <span className="text-sm text-slate-500 ml-1">serial đã chọn</span>
+                  </div>
+                )}
               </div>
-              {/* Quick quantity buttons */}
-              <div className="flex gap-2 mt-4">
-                {[1, 5, 10, 20].map(n => (
+            ) : (
+              /* Quantity Selector for non-serialized products */
+              <div className="bg-white rounded-2xl shadow-sm p-4">
+                <label className="text-sm font-medium text-slate-600 mb-3 block text-center">{t('quantity')}</label>
+                <div className="flex items-center justify-center gap-4">
                   <button
-                    key={n}
-                    onClick={() => setQuantity(n)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${quantity === n ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
                   >
-                    {n}
+                    <Minus className="w-8 h-8 text-slate-600" />
                   </button>
-                ))}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="w-24 text-center text-4xl font-bold py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                    min={1}
+                  />
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-200 active:scale-95 transition-all"
+                  >
+                    <Plus className="w-8 h-8 text-slate-600" />
+                  </button>
+                </div>
+                {/* Quick quantity buttons */}
+                <div className="flex gap-2 mt-4">
+                  {[1, 5, 10, 20].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setQuantity(n)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${quantity === n ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Optional: Order Link (Collapsible) */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
