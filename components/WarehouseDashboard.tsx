@@ -34,6 +34,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     const [loading, setLoading] = useState(true);
     const [prepareTasks, setPrepareTasks] = useState<PrepareTask[]>([]);
     const [cleanTasks, setCleanTasks] = useState<CleanTask[]>([]);
+    const [cleanQty, setCleanQty] = useState<{ [productId: number]: number }>({});
 
     useEffect(() => {
         loadTasks();
@@ -135,26 +136,17 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
         }
     };
 
-    const handleMarkCleaned = async (task: CleanTask) => {
+    const handleMarkCleaned = async (task: CleanTask, quantity: number) => {
         try {
-            // For serialized products, update device_serials status to AVAILABLE
-            if (task.isSerialized) {
-                await supabase
-                    .from('device_serials')
-                    .update({ status: 'AVAILABLE' })
-                    .eq('product_id', task.productId)
-                    .eq('status', 'DIRTY');
-            }
-
-            // Create CLEAN log for all products
+            // Create CLEAN log with the specified quantity
             await supabase.from('inventory_logs').insert({
                 product_id: task.productId,
                 order_id: null,
                 action_type: 'CLEAN',
-                quantity: task.dirtyQty,
+                quantity: quantity,
                 staff_id: db.currentUser?.id,
                 staff_name: db.currentUser?.name,
-                note: '清掃完了 / Đã vệ sinh'
+                note: `清掃完了 ${quantity}個 / Đã vệ sinh ${quantity} cái`
             });
 
             db.logs.push({
@@ -162,14 +154,25 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 productId: task.productId,
                 orderId: 0,
                 actionType: 'CLEAN',
-                quantity: task.dirtyQty,
+                quantity: quantity,
                 timestamp: new Date().toISOString(),
-                note: '清掃完了 / Đã vệ sinh',
+                note: `清掃完了 ${quantity}個 / Đã vệ sinh ${quantity} cái`,
                 staffId: db.currentUser?.id,
                 staffName: db.currentUser?.name
             });
 
-            setCleanTasks(prev => prev.filter(t => t.productId !== task.productId));
+            // Update task: if cleaned all, remove from list; otherwise reduce count
+            if (quantity >= task.dirtyQty) {
+                setCleanTasks(prev => prev.filter(t => t.productId !== task.productId));
+            } else {
+                setCleanTasks(prev => prev.map(t =>
+                    t.productId === task.productId
+                        ? { ...t, dirtyQty: t.dirtyQty - quantity }
+                        : t
+                ));
+            }
+            // Reset quantity selector
+            setCleanQty(prev => ({ ...prev, [task.productId]: undefined as any }));
             refreshApp();
         } catch (e) {
             console.error('Error marking cleaned:', e);
@@ -378,14 +381,39 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                                                     </div>
                                                 </div>
 
-                                                {/* Action Button */}
-                                                <button
-                                                    onClick={() => handleMarkCleaned(task)}
-                                                    className="w-full mt-4 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-600 active:scale-[0.98] transition-all shadow-sm"
-                                                >
-                                                    <Sparkles className="w-5 h-5" />
-                                                    {t('clean_all') || 'Đã vệ sinh xong'}
-                                                </button>
+                                                {/* Quantity Selector and Actions */}
+                                                <div className="mt-4 space-y-3">
+                                                    {/* Quantity stepper */}
+                                                    <div className="flex items-center justify-center gap-3">
+                                                        <button
+                                                            onClick={() => setCleanQty(prev => ({ ...prev, [task.productId]: Math.max(1, (prev[task.productId] || task.dirtyQty) - 1) }))}
+                                                            className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-200"
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <div className="text-center">
+                                                            <p className="text-2xl font-bold text-blue-600">{cleanQty[task.productId] || task.dirtyQty}</p>
+                                                            <p className="text-[10px] text-gray-400">/ {task.dirtyQty}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setCleanQty(prev => ({ ...prev, [task.productId]: Math.min(task.dirtyQty, (prev[task.productId] || task.dirtyQty) + 1) }))}
+                                                            className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-200"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Clean buttons */}
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleMarkCleaned(task, cleanQty[task.productId] || task.dirtyQty)}
+                                                            className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-600 active:scale-[0.98] transition-all"
+                                                        >
+                                                            <Sparkles className="w-4 h-4" />
+                                                            {t('clean_all') || 'Vệ sinh'} ({cleanQty[task.productId] || task.dirtyQty})
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ))
