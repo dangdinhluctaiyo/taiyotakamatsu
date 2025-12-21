@@ -33,6 +33,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [selectedSerialIds, setSelectedSerialIds] = useState<number[]>([]);
   const [loadingSerials, setLoadingSerials] = useState(false);
   const [serialSearchTerm, setSerialSearchTerm] = useState('');
+  const [serialMode, setSerialMode] = useState<'export' | 'import'>('export');
 
   const currentStaff = db.currentUser;
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
@@ -861,11 +862,42 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
             {/* Serial Picker for serialized products */}
             {scannedProduct.isSerialized ? (
               <div className="bg-white rounded-2xl shadow-sm p-4">
+                {/* Mode Toggle */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => {
+                      setSerialMode('export');
+                      loadSerials(scannedProduct.id, 'export');
+                    }}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${serialMode === 'export'
+                      ? 'bg-orange-500 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                  >
+                    <ArrowUpCircle className="w-4 h-4" />
+                    Xuất kho
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSerialMode('import');
+                      loadSerials(scannedProduct.id, 'import');
+                    }}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${serialMode === 'import'
+                      ? 'bg-teal-500 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                  >
+                    <ArrowDownCircle className="w-4 h-4" />
+                    Nhập kho
+                  </button>
+                </div>
+
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Tag className="w-5 h-5 text-indigo-600" />
                     <span className="text-sm font-medium text-slate-700">
-                      Chọn Serial ({selectedSerialIds.length} đã chọn)
+                      {serialMode === 'export' ? 'Serial sẵn sàng xuất' : 'Serial đang thuê (chờ nhập)'}
+                      {' '}({selectedSerialIds.length} đã chọn)
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -1072,28 +1104,55 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
         {/* Fixed Bottom Actions */}
         <div className="flex-shrink-0 bg-white border-t shadow-lg p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)]">
-          <div className="grid grid-cols-2 gap-3">
+          {scannedProduct.isSerialized ? (
+            /* Single button based on mode for serialized products */
             <button
-              onClick={handleImport}
-              className="py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 active:scale-[0.98] transition-all"
+              onClick={serialMode === 'export' ? handleExport : handleImport}
+              disabled={selectedSerialIds.length === 0}
+              className={`w-full py-4 font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none ${serialMode === 'export'
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/30 disabled:from-slate-400 disabled:to-slate-500'
+                  : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-green-500/30 disabled:from-slate-400 disabled:to-slate-500'
+                }`}
             >
-              <ArrowDownCircle className="w-6 h-6" />
-              <span>{t('import_to_stock')}</span>
+              {serialMode === 'export' ? (
+                <>
+                  <ArrowUpCircle className="w-6 h-6" />
+                  <span>Xuất {selectedSerialIds.length} serial</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDownCircle className="w-6 h-6" />
+                  <span>Nhập {selectedSerialIds.length} serial</span>
+                </>
+              )}
             </button>
-            <button
-              onClick={handleExport}
-              disabled={!canExport}
-              className="py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:from-slate-400 disabled:to-slate-500"
-            >
-              <ArrowUpCircle className="w-6 h-6" />
-              <span>{t('export_from_stock')}</span>
-            </button>
-          </div>
-          {/* Warning if can't export */}
-          {!canExport && (
-            <p className="text-center text-xs text-red-500 mt-2">
-              {isOut ? t('out_of_stock') : `${t('not_enough_stock')} (${t('available')}: ${scannedProduct.currentPhysicalStock})`}
-            </p>
+          ) : (
+            /* Two buttons for non-serialized products */
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleImport}
+                  className="py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 active:scale-[0.98] transition-all"
+                >
+                  <ArrowDownCircle className="w-6 h-6" />
+                  <span>{t('import_to_stock')}</span>
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={!canExport}
+                  className="py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:from-slate-400 disabled:to-slate-500"
+                >
+                  <ArrowUpCircle className="w-6 h-6" />
+                  <span>{t('export_from_stock')}</span>
+                </button>
+              </div>
+              {/* Warning if can't export */}
+              {!canExport && (
+                <p className="text-center text-xs text-red-500 mt-2">
+                  {isOut ? t('out_of_stock') : `${t('not_enough_stock')} (${t('available')}: ${scannedProduct.currentPhysicalStock})`}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>,
