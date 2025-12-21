@@ -26,6 +26,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showOrderSelect, setShowOrderSelect] = useState(false);
   const [isProcessingSet, setIsProcessingSet] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const scannerRef = useRef<any>(null);
 
   // Serial selection states
@@ -275,12 +276,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   };
 
   const handleExport = async () => {
-    if (!scannedProduct) return;
+    if (!scannedProduct || isProcessing) return;
+    setIsProcessing(true);
 
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
       if (selectedSerialIds.length === 0) {
         setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để xuất' });
+        setIsProcessing(false);
         return;
       }
 
@@ -331,15 +334,18 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setNote('');
         setSelectedOrderId(null);
         setSelectedSerialIds([]);
+        setIsProcessing(false);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+        setIsProcessing(false);
       }
     } else {
       // Non-serialized product: use quantity
-      if (quantity <= 0) return;
+      if (quantity <= 0) { setIsProcessing(false); return; }
       if (quantity > scannedProduct.currentPhysicalStock) {
         setFeedback({ type: 'error', msg: t('not_enough_stock') });
+        setIsProcessing(false);
         return;
       }
 
@@ -372,20 +378,24 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setQuantity(1);
         setNote('');
         setSelectedOrderId(null);
+        setIsProcessing(false);
       } catch (e: any) {
         console.error('Export error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+        setIsProcessing(false);
       }
     }
   };
 
   const handleImport = async () => {
-    if (!scannedProduct) return;
+    if (!scannedProduct || isProcessing) return;
+    setIsProcessing(true);
 
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
       if (selectedSerialIds.length === 0) {
         setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để nhập lại' });
+        setIsProcessing(false);
         return;
       }
 
@@ -412,11 +422,6 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', importQty, note || t('import_stock'));
         }
 
-        const serialNumbers = availableSerials
-          .filter(s => selectedSerialIds.includes(s.id))
-          .map(s => s.serialNumber)
-          .join(', ');
-
         await refreshApp();
 
         // Reset immediately
@@ -425,13 +430,15 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setNote('');
         setSelectedOrderId(null);
         setSelectedSerialIds([]);
+        setIsProcessing(false);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+        setIsProcessing(false);
       }
     } else {
       // Non-serialized product: use quantity
-      if (quantity <= 0) return;
+      if (quantity <= 0) { setIsProcessing(false); return; }
 
       try {
         console.log('Importing:', scannedProduct.id, quantity, selectedOrderId);
@@ -451,9 +458,11 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setQuantity(1);
         setNote('');
         setSelectedOrderId(null);
+        setIsProcessing(false);
       } catch (e: any) {
         console.error('Import error:', e);
         setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+        setIsProcessing(false);
       }
     }
   };
@@ -1137,7 +1146,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
             /* Single button based on mode for serialized products */
             <button
               onClick={serialMode === 'export' ? handleExport : handleImport}
-              disabled={selectedSerialIds.length === 0}
+              disabled={selectedSerialIds.length === 0 || isProcessing}
               className={`w-full py-4 font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none ${serialMode === 'export'
                 ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/30 disabled:from-slate-400 disabled:to-slate-500'
                 : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-green-500/30 disabled:from-slate-400 disabled:to-slate-500'
@@ -1161,14 +1170,15 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={handleImport}
-                  className="py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 active:scale-[0.98] transition-all"
+                  disabled={isProcessing}
+                  className="py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:from-slate-400 disabled:to-slate-500"
                 >
                   <ArrowDownCircle className="w-6 h-6" />
                   <span>{t('import_to_stock')}</span>
                 </button>
                 <button
                   onClick={handleExport}
-                  disabled={!canExport}
+                  disabled={!canExport || isProcessing}
                   className="py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none disabled:from-slate-400 disabled:to-slate-500"
                 >
                   <ArrowUpCircle className="w-6 h-6" />
