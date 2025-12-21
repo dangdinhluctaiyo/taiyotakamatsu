@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
+import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
 import { Scanner as ScannerEmbed } from './Scanner';
 import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode } from 'lucide-react';
@@ -25,6 +26,7 @@ interface CleanTask {
     productCode: string;
     dirtyQty: number;
     location?: string;
+    isSerialized?: boolean;
 }
 
 export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
@@ -74,21 +76,23 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 });
             setPrepareTasks(prepTasks);
 
-            // For clean tasks, check products with IMPORT logs that don't have a more recent CLEAN log
-            const cleanTasksData: CleanTask[] = [];
+            // Clean tasks from two sources:
+            // 1. IMPORT logs without newer CLEAN logs (for quantity-based products)
+            // 2. device_serials with status = DIRTY (for serialized products)
 
-            // Get all products with recent IMPORT logs
+            const cleanTasksMap = new Map<number, CleanTask>();
+
+            // Source 1: IMPORT logs (for non-serialized products)
             const recentImports = db.logs
                 .filter(l => l.actionType === 'IMPORT')
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-            // Get all CLEAN logs for reference
             const cleanLogs = db.logs.filter(l => l.actionType === 'CLEAN');
 
-            // Build dirty quantity map, only counting IMPORTs that don't have a newer CLEAN
-            const productDirtyMap = new Map<number, { qty: number; lastImportTime: Date }>();
-
             recentImports.forEach(importLog => {
+                const product = db.products.find(p => p.id === importLog.productId);
+                // Skip serialized products - they use device_serials status
+                if (product?.isSerialized) return;
+
                 const lastCleanForProduct = cleanLogs
                     .filter(c => c.productId === importLog.productId)
                     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
@@ -96,30 +100,57 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                 const importTime = new Date(importLog.timestamp);
                 const cleanTime = lastCleanForProduct ? new Date(lastCleanForProduct.timestamp) : null;
 
-                // Only count if no CLEAN log exists, or IMPORT is more recent than CLEAN
                 if (!cleanTime || importTime > cleanTime) {
-                    const existing = productDirtyMap.get(importLog.productId);
+                    const existing = cleanTasksMap.get(importLog.productId);
                     if (existing) {
-                        existing.qty += importLog.quantity;
-                    } else {
-                        productDirtyMap.set(importLog.productId, { qty: importLog.quantity, lastImportTime: importTime });
+                        existing.dirtyQty += importLog.quantity;
+                    } else if (product) {
+                        cleanTasksMap.set(importLog.productId, {
+                            productId: product.id,
+                            productName: product.name,
+                            productCode: product.code,
+                            dirtyQty: importLog.quantity,
+                            location: product.location,
+                            isSerialized: false
+                        });
                     }
                 }
             });
 
-            productDirtyMap.forEach(({ qty }, productId) => {
-                const product = db.products.find(p => p.id === productId);
-                if (product && qty > 0) {
-                    cleanTasksData.push({
-                        productId: product.id,
-                        productName: product.name,
-                        productCode: product.code,
-                        dirtyQty: qty,
-                        location: product.location
-                    });
-                }
-            });
-            setCleanTasks(cleanTasksData);
+            // Source 2: device_serials with DIRTY status (for serialized products)
+            const { data: dirtySerials } = await supabase
+                .from('device_serials')
+                .select('product_id')
+                .eq('status', 'DIRTY');
+
+            if (dirtySerials && dirtySerials.length > 0) {
+                // Group by product_id and count
+                const serialCounts = new Map<number, number>();
+                dirtySerials.forEach(s => {
+                    serialCounts.set(s.product_id, (serialCounts.get(s.product_id) || 0) + 1);
+                });
+
+                serialCounts.forEach((count, productId) => {
+                    const product = db.products.find(p => p.id === productId);
+                    if (product) {
+                        const existing = cleanTasksMap.get(productId);
+                        if (existing) {
+                            existing.dirtyQty += count;
+                        } else {
+                            cleanTasksMap.set(productId, {
+                                productId: product.id,
+                                productName: product.name,
+                                productCode: product.code,
+                                dirtyQty: count,
+                                location: product.location,
+                                isSerialized: true
+                            });
+                        }
+                    }
+                });
+            }
+
+            setCleanTasks(Array.from(cleanTasksMap.values()).filter(t => t.dirtyQty > 0));
 
         } catch (e) {
             console.error('Error loading tasks:', e);
@@ -140,7 +171,16 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
 
     const handleMarkCleaned = async (task: CleanTask) => {
         try {
-            const { supabase } = await import('../services/supabase');
+            // For serialized products, update device_serials status to AVAILABLE
+            if (task.isSerialized) {
+                await supabase
+                    .from('device_serials')
+                    .update({ status: 'AVAILABLE' })
+                    .eq('product_id', task.productId)
+                    .eq('status', 'DIRTY');
+            }
+
+            // Create CLEAN log for all products
             await supabase.from('inventory_logs').insert({
                 product_id: task.productId,
                 order_id: null,
