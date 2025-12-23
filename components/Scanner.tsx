@@ -4,6 +4,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
 import { Product, EquipmentSet, DeviceSerial } from '../types';
+import { useToast } from './Toast';
 import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode, Tag, Check } from 'lucide-react';
 
 declare const Html5QrcodeScanner: any;
@@ -15,6 +16,7 @@ interface ScannerProps {
 }
 
 export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, onClearPendingCode }) => {
+  const { error: toastError } = useToast();
   const [inputQuery, setInputQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedSet, setScannedSet] = useState<EquipmentSet | null>(null);
@@ -286,7 +288,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // Require customer name
     if (!customerName.trim()) {
-      setFeedback({ type: 'error', msg: 'Vui lòng nhập tên khách hàng' });
+      toastError('Vui lòng nhập tên khách hàng');
       return;
     }
 
@@ -422,7 +424,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // Require customer name
     if (!customerName.trim()) {
-      setFeedback({ type: 'error', msg: 'Vui lòng nhập tên khách hàng / nguồn nhập' });
+      toastError('Vui lòng nhập tên khách hàng / nguồn nhập');
       return;
     }
 
