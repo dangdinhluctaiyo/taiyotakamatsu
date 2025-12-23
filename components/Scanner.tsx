@@ -29,12 +29,18 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [isProcessing, setIsProcessing] = useState(false);
   const scannerRef = useRef<any>(null);
 
-  // Serial selection states
   const [availableSerials, setAvailableSerials] = useState<DeviceSerial[]>([]);
   const [selectedSerialIds, setSelectedSerialIds] = useState<number[]>([]);
   const [loadingSerials, setLoadingSerials] = useState(false);
   const [serialSearchTerm, setSerialSearchTerm] = useState('');
   const [serialMode, setSerialMode] = useState<'export' | 'import'>('export');
+
+  // Customer input states
+  const [customerName, setCustomerName] = useState('');
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const customerSuggestions = customerName.length > 0
+    ? db.customers.filter(c => c.name.toLowerCase().includes(customerName.toLowerCase())).slice(0, 5)
+    : [];
 
   const currentStaff = db.currentUser;
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
@@ -279,6 +285,22 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     if (!scannedProduct || isProcessing) return;
     setIsProcessing(true);
 
+    // Create new customer if name entered but not found
+    let finalCustomerName = customerName.trim();
+    if (finalCustomerName && !db.customers.some(c => c.name === finalCustomerName)) {
+      try {
+        await db.addCustomer({ name: finalCustomerName, phone: '' });
+        await refreshApp();
+      } catch (e) {
+        console.error('Error creating customer:', e);
+      }
+    }
+
+    // Build note with customer name
+    const noteWithCustomer = finalCustomerName
+      ? `${finalCustomerName}${note ? ' - ' + note : ''}`
+      : note;
+
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
       if (selectedSerialIds.length === 0) {
@@ -300,14 +322,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
             })
             .eq('id', serialId);
         }
-
         // Update stock count
         const exportQty = selectedSerialIds.length;
         if (selectedOrderId) {
-          await db.exportStock(selectedOrderId, scannedProduct.id, exportQty, note || t('export_stock'));
+          await db.exportStock(selectedOrderId, scannedProduct.id, exportQty, noteWithCustomer || t('export_stock'));
         } else {
           const newStock = scannedProduct.currentPhysicalStock - exportQty;
-          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', exportQty, note || t('export_stock'));
+          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', exportQty, noteWithCustomer || t('export_stock'));
         }
 
         const serialNumbers = availableSerials
@@ -332,6 +353,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedProduct(null);
         setQuantity(1);
         setNote('');
+        setCustomerName('');
         setSelectedOrderId(null);
         setSelectedSerialIds([]);
         setIsProcessing(false);
@@ -353,11 +375,11 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         console.log('Exporting:', scannedProduct.id, quantity, selectedOrderId);
 
         if (selectedOrderId) {
-          await db.exportStock(selectedOrderId, scannedProduct.id, quantity, note || t('export_stock'));
+          await db.exportStock(selectedOrderId, scannedProduct.id, quantity, noteWithCustomer || t('export_stock'));
         } else {
           const newStock = scannedProduct.currentPhysicalStock - quantity;
           console.log('Updating stock to:', newStock);
-          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, note || t('export_stock'));
+          await db.updateProductStock(scannedProduct.id, newStock, 'EXPORT', quantity, noteWithCustomer || t('export_stock'));
         }
 
         // Also create CLEAN log to remove from cleaning tasks
@@ -377,6 +399,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedProduct(null);
         setQuantity(1);
         setNote('');
+        setCustomerName('');
         setSelectedOrderId(null);
         setIsProcessing(false);
       } catch (e: any) {
@@ -390,6 +413,22 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const handleImport = async () => {
     if (!scannedProduct || isProcessing) return;
     setIsProcessing(true);
+
+    // Create new customer if name entered but not found
+    let finalCustomerName = customerName.trim();
+    if (finalCustomerName && !db.customers.some(c => c.name === finalCustomerName)) {
+      try {
+        await db.addCustomer({ name: finalCustomerName, phone: '' });
+        await refreshApp();
+      } catch (e) {
+        console.error('Error creating customer:', e);
+      }
+    }
+
+    // Build note with customer name
+    const noteWithCustomer = finalCustomerName
+      ? `${finalCustomerName}${note ? ' - ' + note : ''}`
+      : note;
 
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
@@ -416,10 +455,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         // Update stock count
         const importQty = selectedSerialIds.length;
         if (selectedOrderId) {
-          await db.importStock(selectedOrderId, scannedProduct.id, importQty, note || t('import_stock'));
+          await db.importStock(selectedOrderId, scannedProduct.id, importQty, noteWithCustomer || t('import_stock'));
         } else {
           const newStock = scannedProduct.currentPhysicalStock + importQty;
-          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', importQty, note || t('import_stock'));
+          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', importQty, noteWithCustomer || t('import_stock'));
         }
 
         await refreshApp();
@@ -428,6 +467,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedProduct(null);
         setQuantity(1);
         setNote('');
+        setCustomerName('');
         setSelectedOrderId(null);
         setSelectedSerialIds([]);
         setIsProcessing(false);
@@ -444,11 +484,11 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         console.log('Importing:', scannedProduct.id, quantity, selectedOrderId);
 
         if (selectedOrderId) {
-          await db.importStock(selectedOrderId, scannedProduct.id, quantity, note || t('import_stock'));
+          await db.importStock(selectedOrderId, scannedProduct.id, quantity, noteWithCustomer || t('import_stock'));
         } else {
           const newStock = scannedProduct.currentPhysicalStock + quantity;
           console.log('Updating stock to:', newStock);
-          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, note || t('import_stock'));
+          await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, noteWithCustomer || t('import_stock'));
         }
 
         await refreshApp();
@@ -457,6 +497,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedProduct(null);
         setQuantity(1);
         setNote('');
+        setCustomerName('');
         setSelectedOrderId(null);
         setIsProcessing(false);
       } catch (e: any) {
@@ -1113,6 +1154,51 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     );
                   })}
                 </div>
+              )}
+            </div>
+
+            {/* Customer Name Input with Auto-suggest */}
+            <div className="bg-white rounded-2xl shadow-sm p-4">
+              <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {t('customer_name') || 'Tên khách hàng'}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    setShowCustomerSuggestions(true);
+                  }}
+                  onFocus={() => setShowCustomerSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                  placeholder="Nhập tên khách hàng..."
+                  className="w-full p-3 bg-slate-50 border-2 border-transparent rounded-xl focus:border-blue-500 focus:bg-white outline-none transition-all text-sm"
+                />
+                {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-40 overflow-y-auto">
+                    {customerSuggestions.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setCustomerName(c.name);
+                          setShowCustomerSuggestions(false);
+                        }}
+                        className="w-full p-3 text-left hover:bg-blue-50 text-sm flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4 text-slate-400" />
+                        <span>{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {customerName && !customerSuggestions.some(c => c.name === customerName) && (
+                <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
+                  <Plus className="w-3 h-3" />
+                  Sẽ tạo khách hàng mới
+                </p>
               )}
             </div>
 
