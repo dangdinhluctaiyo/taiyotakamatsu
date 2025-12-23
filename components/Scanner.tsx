@@ -283,6 +283,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
   const handleExport = async () => {
     if (!scannedProduct || isProcessing) return;
+
+    // Require customer name
+    if (!customerName.trim()) {
+      setFeedback({ type: 'error', msg: 'Vui lòng nhập tên khách hàng' });
+      return;
+    }
+
     setIsProcessing(true);
 
     // Create new customer if name entered but not found
@@ -412,6 +419,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
   const handleImport = async () => {
     if (!scannedProduct || isProcessing) return;
+
+    // Require customer name
+    if (!customerName.trim()) {
+      setFeedback({ type: 'error', msg: 'Vui lòng nhập tên khách hàng / nguồn nhập' });
+      return;
+    }
+
     setIsProcessing(true);
 
     // Create new customer if name entered but not found
