@@ -793,7 +793,7 @@ const ProductCard: React.FC<{
 
   return (
     <div onClick={onView} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-hidden border group cursor-pointer">
-      <div className="relative h-32 md:h-40 bg-slate-100 overflow-hidden">
+      <div className="relative h-28 bg-slate-100 overflow-hidden">
         <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg text-xs font-mono font-bold">{p.code}</div>
         {(isOut || isLow) && (
@@ -802,32 +802,36 @@ const ProductCard: React.FC<{
           </div>
         )}
         {p.location && (
-          <div className="absolute bottom-2 right-2 bg-indigo-500/90 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> {p.location}
+          <div className="absolute bottom-2 right-2 bg-indigo-500/90 text-white px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
+            <MapPin className="w-2.5 h-2.5" /> {p.location}
           </div>
         )}
       </div>
-      <div className="p-3">
+      <div className="p-2.5">
         <h3 className="font-semibold text-slate-800 text-sm leading-tight mb-0.5 truncate">{p.name}</h3>
-        <p className="text-xs text-slate-400 mb-2">{p.category}</p>
+        <p className="text-[10px] text-slate-400 mb-2 truncate">{p.category}</p>
+
+        {/* Compact Stock Stats */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isOut ? 'bg-red-100 text-red-600' : isLow ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+            {p.currentPhysicalStock}/{p.totalOwned}
+          </span>
+          {onRent > 0 && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600">
+              🚚{onRent}
+            </span>
+          )}
+        </div>
 
         {/* Stock Bar */}
-        <div className="mb-2">
-          <div className="flex justify-between text-[10px] font-medium mb-1">
-            <span className={isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}>{t('available')}: {p.currentPhysicalStock}</span>
-            <span className="text-slate-400">{t('total_owned')}: {p.totalOwned}</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className={`h-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${stockPercent}%` }} />
-          </div>
+        <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div className={`h-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${stockPercent}%` }} />
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t" onClick={e => e.stopPropagation()}>
-          <span className="text-xs text-slate-400">{onRent > 0 ? `${onRent} ${t('renting')}` : ''}</span>
-
+        <div className="flex items-center justify-end pt-2 mt-2 border-t gap-0.5" onClick={e => e.stopPropagation()}>
           {/* Desktop: Show all buttons */}
-          <div className="hidden md:flex gap-1">
+          <div className="hidden md:flex gap-0.5">
             <IconBtn onClick={onHistory} icon={<History className="w-3.5 h-3.5" />} />
             <IconBtn onClick={onSerial} icon={<Tag className="w-3.5 h-3.5 text-purple-500" />} />
             <IconBtn onClick={onQR} icon={<QrCode className="w-3.5 h-3.5" />} />
@@ -836,33 +840,21 @@ const ProductCard: React.FC<{
           </div>
 
           {/* Mobile: iOS-style simple icon buttons */}
-          <div className="flex md:hidden items-center justify-end gap-1">
-            <button
-              onClick={onSerial}
-              className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
-            >
-              <Tag className="w-4 h-4" />
+          <div className="flex md:hidden items-center gap-0.5">
+            <button onClick={onSerial} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-500">
+              <Tag className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={onQR}
-              className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
-            >
-              <QrCode className="w-4 h-4" />
+            <button onClick={onQR} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-500">
+              <QrCode className="w-3.5 h-3.5" />
             </button>
             {isAdmin && (
-              <button
-                onClick={onEdit}
-                className="w-8 h-8 flex items-center justify-center text-[--ios-gray] hover:text-[--ios-blue] transition-colors active:opacity-50"
-              >
-                <Edit className="w-4 h-4" />
+              <button onClick={onEdit} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-500">
+                <Edit className="w-3.5 h-3.5" />
               </button>
             )}
             {isAdmin && (
-              <button
-                onClick={onDelete}
-                className="w-8 h-8 flex items-center justify-center text-[--ios-red] hover:opacity-70 transition-colors active:opacity-50"
-              >
-                <Trash2 className="w-4 h-4" />
+              <button onClick={onDelete} className="w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-500">
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
