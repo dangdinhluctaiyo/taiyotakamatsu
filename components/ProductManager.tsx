@@ -493,14 +493,6 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                         </div>
                         <span className="font-bold text-slate-700">x{log.quantity}</span>
                       </div>
-                      {/* Customer/Note info */}
-                      {log.note && (
-                        <p className="text-xs text-blue-600 mt-1 ml-9 truncate">📋 {log.note}</p>
-                      )}
-                      {/* Staff info */}
-                      {log.staffName && (
-                        <p className="text-xs text-slate-400 mt-0.5 ml-9">👤 {log.staffName}</p>
-                      )}
                     </div>
                   ))}
                 </div>
