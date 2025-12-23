@@ -39,10 +39,12 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
   // Customer input states
   const [customerName, setCustomerName] = useState('');
+  const [customerError, setCustomerError] = useState(false);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  // Show matching customers, or show recent customers when input is empty
   const customerSuggestions = customerName.length > 0
     ? db.customers.filter(c => c.name.toLowerCase().includes(customerName.toLowerCase())).slice(0, 5)
-    : [];
+    : db.customers.slice(0, 5); // Show first 5 customers when empty
 
   const currentStaff = db.currentUser;
   const activeOrders = db.orders.filter(o => o.status === 'BOOKED' || o.status === 'ACTIVE');
@@ -288,9 +290,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // Require customer name
     if (!customerName.trim()) {
-      toastError('Vui lòng nhập tên khách hàng');
+      setCustomerError(true);
       return;
     }
+    setCustomerError(false);
 
     setIsProcessing(true);
 
@@ -424,9 +427,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // Require customer name
     if (!customerName.trim()) {
-      toastError('Vui lòng nhập tên khách hàng / nguồn nhập');
+      setCustomerError(true);
       return;
     }
+    setCustomerError(false);
 
     setIsProcessing(true);
 
@@ -1174,10 +1178,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
             </div>
 
             {/* Customer Name Input with Auto-suggest */}
-            <div className="bg-white rounded-2xl shadow-sm p-4">
+            <div className={`bg-white rounded-2xl shadow-sm p-4 ${customerError ? 'ring-2 ring-red-500 animate-pulse' : ''}`}>
               <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {t('customer_name') || 'Tên khách hàng'}
+                {t('customer_name') || 'Tên khách hàng'} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -1185,13 +1189,20 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                   value={customerName}
                   onChange={(e) => {
                     setCustomerName(e.target.value);
+                    setCustomerError(false);
                     setShowCustomerSuggestions(true);
                   }}
                   onFocus={() => setShowCustomerSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
                   placeholder="Nhập tên khách hàng..."
-                  className="w-full p-3 bg-slate-50 border-2 border-transparent rounded-xl focus:border-blue-500 focus:bg-white outline-none transition-all text-sm"
+                  className={`w-full p-3 bg-slate-50 border-2 rounded-xl focus:bg-white outline-none transition-all text-sm ${customerError ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-blue-500'}`}
                 />
+                {customerError && (
+                  <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Vui lòng nhập tên khách hàng
+                  </p>
+                )}
                 {showCustomerSuggestions && customerSuggestions.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-40 overflow-y-auto">
                     {customerSuggestions.map(c => (
