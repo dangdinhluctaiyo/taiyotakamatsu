@@ -739,7 +739,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                     <th className="p-3">{t('time')}</th>
                     <th className="p-3">{t('type')}</th>
                     <th className="p-3 text-right">{t('qty')}</th>
-                    <th className="p-3">{t('order')}</th>
+                    <th className="p-3">顧客</th>
                     <th className="p-3">担当者</th>
                     <th className="p-3">{t('note')}</th>
                   </tr>
@@ -747,21 +747,27 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 <tbody className="divide-y">
                   {getProductLogs(viewHistoryFor.id).length === 0 ? (
                     <tr><td colSpan={6} className="p-8 text-center text-slate-400">{t('no_transactions')}</td></tr>
-                  ) : getProductLogs(viewHistoryFor.id).map(log => (
-                    <tr key={log.id} className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-600">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</td>
-                      <td className="p-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                          {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownLeft className="w-3 h-3" />}
-                          {log.actionType === 'EXPORT' ? t('export') : t('import')}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right font-bold">{log.quantity}</td>
-                      <td className="p-3">{log.orderId ? <span className="text-indigo-600 font-medium">#{log.orderId}</span> : '-'}</td>
-                      <td className="p-3 text-slate-600">{log.staffName || '-'}</td>
-                      <td className="p-3 text-slate-500 truncate max-w-[120px]">{log.note || '-'}</td>
-                    </tr>
-                  ))}
+                  ) : getProductLogs(viewHistoryFor.id).map(log => {
+                    // Extract customer name from note (format: "CustomerName - optional note")
+                    const noteParts = log.note?.split(' - ') || [];
+                    const customerName = noteParts.length > 0 ? noteParts[0] : '-';
+                    const noteText = noteParts.length > 1 ? noteParts.slice(1).join(' - ') : (noteParts.length === 1 ? '' : '-');
+                    return (
+                      <tr key={log.id} className="hover:bg-slate-50">
+                        <td className="p-3 text-slate-600">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</td>
+                        <td className="p-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                            {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownLeft className="w-3 h-3" />}
+                            {log.actionType === 'EXPORT' ? t('export') : t('import')}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-bold">{log.quantity}</td>
+                        <td className="p-3 text-blue-600 font-medium">{customerName}</td>
+                        <td className="p-3 text-slate-600">{log.staffName || '-'}</td>
+                        <td className="p-3 text-slate-500 truncate max-w-[100px]">{noteText || '-'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
