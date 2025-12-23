@@ -426,7 +426,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   </div>
                   <div className="bg-orange-50 p-3 rounded-xl text-center">
                     <Truck className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-orange-600">{viewDetailFor.totalOwned - viewDetailFor.currentPhysicalStock}</p>
+                    <p className="text-xl font-bold text-orange-600">{Math.max(0, viewDetailFor.totalOwned - viewDetailFor.currentPhysicalStock)}</p>
                     <p className="text-[10px] text-orange-500 uppercase font-bold">{t('renting')}</p>
                   </div>
                 </div>
