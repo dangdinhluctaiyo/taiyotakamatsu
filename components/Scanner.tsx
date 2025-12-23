@@ -1204,7 +1204,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                   </p>
                 )}
                 {showCustomerSuggestions && customerSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-40 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-40 overflow-y-auto">
                     {customerSuggestions.map(c => (
                       <button
                         key={c.id}
