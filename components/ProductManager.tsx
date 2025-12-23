@@ -479,18 +479,28 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {getProductLogs(viewDetailFor.id).length === 0 ? (
                     <p className="text-slate-400 text-sm py-3 text-center bg-slate-50 rounded-lg">{t('no_activity')}</p>
-                  ) : getProductLogs(viewDetailFor.id).slice(0, 3).map(log => (
-                    <div key={log.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className={`p-1.5 rounded-lg ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                          {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownLeft className="w-3.5 h-3.5" />}
-                        </span>
-                        <div>
-                          <span className="font-medium text-slate-800 text-sm">{log.actionType === 'EXPORT' ? t('export_stock') : t('import_stock')}</span>
-                          <p className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
+                  ) : getProductLogs(viewDetailFor.id).slice(0, 5).map(log => (
+                    <div key={log.id} className="p-2.5 bg-slate-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`p-1.5 rounded-lg ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                            {log.actionType === 'EXPORT' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownLeft className="w-3.5 h-3.5" />}
+                          </span>
+                          <div>
+                            <span className="font-medium text-slate-800 text-sm">{log.actionType === 'EXPORT' ? t('export_stock') : t('import_stock')}</span>
+                            <p className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
+                          </div>
                         </div>
+                        <span className="font-bold text-slate-700">x{log.quantity}</span>
                       </div>
-                      <span className="font-bold text-slate-700">x{log.quantity}</span>
+                      {/* Customer/Note info */}
+                      {log.note && (
+                        <p className="text-xs text-blue-600 mt-1 ml-9 truncate">📋 {log.note}</p>
+                      )}
+                      {/* Staff info */}
+                      {log.staffName && (
+                        <p className="text-xs text-slate-400 mt-0.5 ml-9">👤 {log.staffName}</p>
+                      )}
                     </div>
                   ))}
                 </div>
