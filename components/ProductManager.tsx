@@ -740,12 +740,13 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                     <th className="p-3">{t('type')}</th>
                     <th className="p-3 text-right">{t('qty')}</th>
                     <th className="p-3">{t('order')}</th>
+                    <th className="p-3">担当者</th>
                     <th className="p-3">{t('note')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {getProductLogs(viewHistoryFor.id).length === 0 ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-slate-400">{t('no_transactions')}</td></tr>
+                    <tr><td colSpan={6} className="p-8 text-center text-slate-400">{t('no_transactions')}</td></tr>
                   ) : getProductLogs(viewHistoryFor.id).map(log => (
                     <tr key={log.id} className="hover:bg-slate-50">
                       <td className="p-3 text-slate-600">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</td>
@@ -757,6 +758,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                       </td>
                       <td className="p-3 text-right font-bold">{log.quantity}</td>
                       <td className="p-3">{log.orderId ? <span className="text-indigo-600 font-medium">#{log.orderId}</span> : '-'}</td>
+                      <td className="p-3 text-slate-600">{log.staffName || '-'}</td>
                       <td className="p-3 text-slate-500 truncate max-w-[120px]">{log.note || '-'}</td>
                     </tr>
                   ))}
