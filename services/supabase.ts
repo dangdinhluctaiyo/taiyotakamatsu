@@ -8,6 +8,9 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 const generateId = () => Math.floor(Math.random() * 100000);
 
+// Cache key and version for localStorage
+const CACHE_KEY = 'taiyo_db_cache_v2';
+
 export class SupabaseDB {
   products: Product[] = [];
   orders: Order[] = [];
@@ -18,10 +21,12 @@ export class SupabaseDB {
   equipmentSets: EquipmentSet[] = [];
   currentUser: Staff | null = null;
   private initialized = false;
+  private refreshPromise: Promise<void> | null = null;
 
   constructor() {
     this.loadSession();
-    this.init();
+    // Load from cache immediately (sync)
+    this.loadFromLocalCache();
   }
 
   private loadSession() {
@@ -33,8 +38,82 @@ export class SupabaseDB {
     }
   }
 
+  // PERF: Load cached data instantly for fast startup
+  private loadFromLocalCache() {
+    if (typeof window === 'undefined') return;
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        this.products = data.products || [];
+        this.orders = data.orders || [];
+        this.customers = data.customers || [];
+        this.staff = data.staff || [];
+        this.logs = data.logs || [];
+        this.equipmentSets = data.equipmentSets || [];
+        this.initialized = true; // Allow app to render with cached data
+        console.log('PWA: Loaded from cache instantly');
+      }
+    } catch (e) {
+      console.warn('PWA: Failed to load cache', e);
+    }
+  }
+
+  // PERF: Save data to localStorage for next startup
+  // Excludes large fields (images) to stay under 5MB quota
+  private saveToLocalCache() {
+    if (typeof window === 'undefined') return;
+    try {
+      // Strip images and large fields from products to reduce size
+      // CRITICAL: Exclude base64 imageUrl (some are 4MB+!)
+      const lightProducts = this.products.map(p => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        category: p.category,
+        pricePerDay: p.pricePerDay,
+        totalOwned: p.totalOwned,
+        currentPhysicalStock: p.currentPhysicalStock,
+        // Only cache real URLs, skip base64 strings (start with 'data:')
+        imageUrl: p.imageUrl && !p.imageUrl.startsWith('data:') ? p.imageUrl : null,
+        location: p.location,
+        isSerialized: p.isSerialized
+      }));
+
+      // Only cache essential order fields
+      const lightOrders = this.orders.slice(0, 50).map(o => ({
+        id: o.id,
+        customerId: o.customerId,
+        status: o.status,
+        rentalStartDate: o.rentalStartDate,
+        expectedReturnDate: o.expectedReturnDate,
+        items: o.items
+      }));
+
+      const data = {
+        products: lightProducts,
+        orders: lightOrders,
+        customers: this.customers,
+        staff: this.staff,
+        logs: this.logs.slice(0, 50), // Only 50 recent logs
+        equipmentSets: this.equipmentSets.slice(0, 20),
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      console.log('PWA: Saved to cache');
+    } catch (e) {
+      console.warn('PWA: Failed to save cache', e);
+    }
+  }
+
   async init() {
-    if (this.initialized) return;
+    // If already initialized from cache, just refresh in background
+    if (this.initialized) {
+      this.refreshInBackground();
+      return;
+    }
+
+    // First time load (no cache) - must wait
     try {
       const [products, orders, customers, staff, logs, equipmentSets] = await Promise.all([
         this.fetchProducts(),
@@ -51,13 +130,45 @@ export class SupabaseDB {
       this.logs = logs;
       this.equipmentSets = equipmentSets;
       this.initialized = true;
+      this.saveToLocalCache();
     } catch (e) { console.error('Failed to init Supabase DB:', e); }
+  }
+
+  // PERF: Refresh data in background without blocking UI
+  private async refreshInBackground() {
+    if (this.refreshPromise) return; // Already refreshing
+
+    this.refreshPromise = (async () => {
+      try {
+        const [products, orders, customers, staff, logs, equipmentSets] = await Promise.all([
+          this.fetchProducts(),
+          this.fetchOrders(),
+          this.fetchCustomers(),
+          this.fetchStaff(),
+          this.fetchLogs(),
+          this.fetchEquipmentSetsFromSupabase(),
+        ]);
+        this.products = products;
+        this.orders = orders;
+        this.customers = customers;
+        this.staff = staff;
+        this.logs = logs;
+        this.equipmentSets = equipmentSets;
+        this.saveToLocalCache();
+        console.log('PWA: Background refresh complete');
+      } catch (e) {
+        console.error('PWA: Background refresh failed:', e);
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
   }
 
   async refresh() {
     // No delay needed - Supabase updates are immediately consistent
     this.initialized = false;
     await this.init();
+    this.saveToLocalCache();
   }
 
   // Partial refresh methods for better performance
