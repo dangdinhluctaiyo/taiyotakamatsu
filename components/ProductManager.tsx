@@ -27,6 +27,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [showSerialFor, setShowSerialFor] = useState<Product | null>(null);
   const [serialCounts, setSerialCounts] = useState<{ total: number, available: number, on_rent: number, dirty: number, broken: number }>({ total: 0, available: 0, on_rent: 0, dirty: 0, broken: 0 });
+  const [selectedLog, setSelectedLog] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(db.products.length === 0);
 
   // Debounce search term for performance
@@ -564,7 +565,11 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   {getProductLogs(viewDetailFor.id).length === 0 ? (
                     <p className="text-slate-400 text-sm py-3 text-center bg-slate-50 rounded-lg">{t('no_activity')}</p>
                   ) : getProductLogs(viewDetailFor.id).slice(0, 5).map(log => (
-                    <div key={log.id} className="p-2.5 bg-slate-50 rounded-lg">
+                    <div
+                      key={log.id}
+                      className="p-2.5 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => setSelectedLog(log)}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className={`p-1.5 rounded-lg ${log.actionType === 'EXPORT' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
@@ -575,7 +580,10 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                             <p className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleDateString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}</p>
                           </div>
                         </div>
-                        <span className="font-bold text-slate-700">x{log.quantity}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-700">x{log.quantity}</span>
+                          <ChevronRight className="w-4 h-4 text-slate-400" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -858,6 +866,68 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
           onClose={() => setShowSerialFor(null)}
           refreshApp={refreshApp}
         />
+      )}
+
+      {/* LOG DETAIL MODAL */}
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4" onClick={() => setSelectedLog(null)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className={`p-4 text-white ${selectedLog.actionType === 'EXPORT' ? 'bg-orange-500' : selectedLog.actionType === 'IMPORT' ? 'bg-green-500' : 'bg-blue-500'}`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-lg">
+                    {selectedLog.actionType === 'EXPORT' ? '📤 Xuất kho' : selectedLog.actionType === 'IMPORT' ? '📥 Nhập kho' : '🧹 Vệ sinh'}
+                  </h3>
+                  <p className="text-white/80 text-sm mt-1">
+                    {new Date(selectedLog.timestamp).toLocaleString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedLog(null)} className="p-1 hover:bg-white/20 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Số lượng</span>
+                <span className="text-2xl font-bold text-slate-800">×{selectedLog.quantity}</span>
+              </div>
+              {selectedLog.staffName && (
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span className="text-slate-500 flex items-center gap-2">
+                    <Box className="w-4 h-4" /> Nhân viên
+                  </span>
+                  <span className="font-medium text-slate-700">{selectedLog.staffName}</span>
+                </div>
+              )}
+              {selectedLog.orderId && selectedLog.orderId > 0 && (
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span className="text-slate-500 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Đơn hàng #
+                  </span>
+                  <span className="font-medium text-slate-700">{selectedLog.orderId}</span>
+                </div>
+              )}
+              {selectedLog.note && (
+                <div className="p-3 bg-amber-50 rounded-xl">
+                  <p className="text-sm text-amber-800">💬 {selectedLog.note}</p>
+                </div>
+              )}
+              {(() => {
+                const product = db.products.find(p => p.id === selectedLog.productId);
+                return product ? (
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    {product.imageUrl && <img src={product.imageUrl} className="w-12 h-12 object-cover rounded-lg" />}
+                    <div>
+                      <p className="font-medium text-slate-800">{product.name}</p>
+                      <p className="text-xs text-slate-500">{product.code}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
