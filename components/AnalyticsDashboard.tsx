@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
-import { BarChart3, TrendingUp, Package, ShoppingCart, Calendar, DollarSign, AlertTriangle, CheckCircle } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, ShoppingCart, Calendar, DollarSign, AlertTriangle, CheckCircle, Download, FileSpreadsheet, Database } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
     refreshApp?: () => void;
@@ -11,6 +11,73 @@ interface AnalyticsDashboardProps {
  * Analytics Dashboard - Statistics and charts for management
  */
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = () => {
+    const [exporting, setExporting] = useState(false);
+
+    // Export products to CSV
+    const exportProductsCSV = () => {
+        const headers = ['Code', 'Name', 'Category', 'TotalOwned', 'CurrentStock', 'OnRent', 'PricePerDay'];
+        const rows = db.products.map(p => [
+            p.code,
+            p.name,
+            p.category,
+            p.totalOwned,
+            p.currentPhysicalStock,
+            p.totalOwned - p.currentPhysicalStock,
+            p.pricePerDay
+        ]);
+        downloadCSV([headers, ...rows], 'products_inventory.csv');
+    };
+
+    // Export logs to CSV
+    const exportLogsCSV = () => {
+        const headers = ['Date', 'ProductCode', 'ProductName', 'ActionType', 'Quantity', 'Note'];
+        const rows = db.logs.slice(-500).map(l => {
+            const product = db.products.find(p => p.id === l.productId);
+            return [
+                new Date(l.timestamp).toLocaleString('vi-VN'),
+                product?.code || '',
+                product?.name || '',
+                l.actionType,
+                l.quantity,
+                l.note || ''
+            ];
+        });
+        downloadCSV([headers, ...rows], 'inventory_logs.csv');
+    };
+
+    // Export full backup JSON
+    const exportBackup = () => {
+        const backup = {
+            exportedAt: new Date().toISOString(),
+            products: db.products,
+            orders: db.orders,
+            customers: db.customers,
+            logs: db.logs,
+            staff: db.staff.map(s => ({ ...s, password: '***' })) // Don't export real passwords
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `taiyotakamatsu_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // Helper to download CSV
+    const downloadCSV = (data: (string | number)[][], filename: string) => {
+        const csv = data.map(row => row.map(cell =>
+            typeof cell === 'string' && cell.includes(',') ? `"${cell}"` : cell
+        ).join(',')).join('\\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     // Calculate statistics
     const stats = useMemo(() => {
         const today = new Date();
@@ -81,13 +148,37 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = () => {
     return (
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <BarChart3 className="w-7 h-7 text-indigo-600" />
                         {t('dashboard_title') || 'Dashboard Thống kê'}
                     </h1>
                     <p className="text-slate-500 text-sm mt-1">Tổng quan hoạt động kinh doanh</p>
+                </div>
+                {/* Export Buttons */}
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={exportProductsCSV}
+                        className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Xuất SP
+                    </button>
+                    <button
+                        onClick={exportLogsCSV}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                    >
+                        <Download className="w-4 h-4" />
+                        Xuất Logs
+                    </button>
+                    <button
+                        onClick={exportBackup}
+                        className="flex items-center gap-2 px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors"
+                    >
+                        <Database className="w-4 h-4" />
+                        Backup
+                    </button>
                 </div>
             </div>
 
