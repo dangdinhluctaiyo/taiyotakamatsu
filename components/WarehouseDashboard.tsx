@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
 import { Scanner as ScannerEmbed } from './Scanner';
 import { InventoryHistory } from './InventoryHistory';
-import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode, History } from 'lucide-react';
+import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode, History, AlertTriangle, Bell, X } from 'lucide-react';
 
 interface Props {
     refreshApp: () => void;
@@ -36,6 +36,32 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     const [prepareTasks, setPrepareTasks] = useState<PrepareTask[]>([]);
     const [cleanTasks, setCleanTasks] = useState<CleanTask[]>([]);
     const [cleanQty, setCleanQty] = useState<{ [productId: number]: number }>({});
+    const [showAlerts, setShowAlerts] = useState(true);
+
+    // Compute alerts
+    const alerts = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Overdue orders
+        const overdueOrders = db.orders.filter(o => {
+            if (o.status !== 'ACTIVE' && o.status !== 'BOOKED') return false;
+            const startDate = new Date(o.rentalStartDate);
+            startDate.setHours(0, 0, 0, 0);
+            if (o.status === 'BOOKED' && startDate > today) return false;
+            return new Date(o.expectedReturnDate) < today;
+        });
+
+        // Low stock products (stock ≤ 2 but > 0)
+        const lowStock = db.products.filter(p => p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2);
+
+        // Out of stock
+        const outOfStock = db.products.filter(p => p.currentPhysicalStock === 0 && p.totalOwned > 0);
+
+        return { overdueOrders, lowStock, outOfStock };
+    }, [db.orders, db.products]);
+
+    const totalAlerts = alerts.overdueOrders.length + alerts.lowStock.length + alerts.outOfStock.length;
 
     useEffect(() => {
         loadTasks();
@@ -212,6 +238,38 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                     </button>
                 </div>
             </div>
+
+            {/* Alerts Banner */}
+            {showAlerts && totalAlerts > 0 && (
+                <div className="mx-4 -mt-8 mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 relative z-10 shadow-sm">
+                    <button
+                        onClick={() => setShowAlerts(false)}
+                        className="absolute top-2 right-2 p-1 text-amber-600 hover:text-amber-800"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-start gap-3">
+                        <Bell className="w-5 h-5 text-amber-600 mt-0.5" />
+                        <div className="text-sm space-y-1">
+                            {alerts.overdueOrders.length > 0 && (
+                                <p className="text-red-700">
+                                    ⚠️ <b>{alerts.overdueOrders.length}</b> đơn quá hạn
+                                </p>
+                            )}
+                            {alerts.outOfStock.length > 0 && (
+                                <p className="text-red-600">
+                                    🚫 <b>{alerts.outOfStock.length}</b> SP hết hàng
+                                </p>
+                            )}
+                            {alerts.lowStock.length > 0 && (
+                                <p className="text-amber-700">
+                                    📦 <b>{alerts.lowStock.length}</b> SP sắp hết
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Fixed Tabs and Content */}
             <div className="flex-1 flex flex-col -mt-10 overflow-hidden md:overflow-visible">
