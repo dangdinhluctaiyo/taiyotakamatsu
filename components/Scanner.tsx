@@ -33,6 +33,11 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [isProcessing, setIsProcessing] = useState(false);
   const scannerRef = useRef<any>(null);
 
+  // Continuous scanning mode
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [scanQueue, setScanQueue] = useState<{ product: Product; quantity: number; time: Date }[]>([]);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+
   const [availableSerials, setAvailableSerials] = useState<DeviceSerial[]>([]);
   const [selectedSerialIds, setSelectedSerialIds] = useState<number[]>([]);
   const [loadingSerials, setLoadingSerials] = useState(false);
@@ -245,6 +250,47 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     }
 
     // Regular product search
+    const query = decodedText.toLowerCase().trim();
+    const product = db.products.find(p =>
+      p.code.toLowerCase() === query || p.code.toLowerCase().includes(query)
+    );
+
+    if (product) {
+      // In continuous mode, add to queue and keep camera open
+      if (continuousMode) {
+        // Prevent duplicate scans within 2 seconds
+        if (lastScannedCode === decodedText) return;
+        setLastScannedCode(decodedText);
+        setTimeout(() => setLastScannedCode(null), 2000);
+
+        // Add to queue or increment quantity if already exists
+        setScanQueue(prev => {
+          const existing = prev.find(item => item.product.id === product.id);
+          if (existing) {
+            return prev.map(item =>
+              item.product.id === product.id
+                ? { ...item, quantity: item.quantity + 1, time: new Date() }
+                : item
+            );
+          }
+          return [...prev, { product, quantity: 1, time: new Date() }];
+        });
+        haptic.success();
+        setFeedback({ type: 'success', msg: `✓ ${product.name} (+1)` });
+        setTimeout(() => setFeedback(null), 1500);
+        return;
+      }
+
+      // Normal mode - select product and close camera
+      setScannedProduct(product);
+      setSearchResults([]);
+      setInputQuery('');
+      setFeedback(null);
+      setQuantity(1);
+      return;
+    }
+
+    // Fallback - search by name
     setInputQuery(decodedText);
     handleSearch(decodedText);
   };
@@ -732,6 +778,94 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     } finally {
       setIsProcessingSet(false);
     }
+  };
+
+  // Batch export all items in scan queue
+  const handleQueueExport = async () => {
+    if (scanQueue.length === 0 || isProcessing) return;
+    setIsProcessing(true);
+    haptic.light();
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of scanQueue) {
+      const product = item.product;
+      if (product.currentPhysicalStock < item.quantity) {
+        errorCount++;
+        continue;
+      }
+      try {
+        const noteText = customerName ? `[${customerName}] ${note}` : note;
+        await db.updateProductStock(
+          product.id,
+          product.currentPhysicalStock - item.quantity,
+          'EXPORT',
+          item.quantity,
+          noteText || `Batch export x${item.quantity}`
+        );
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    }
+
+    await Promise.all([db.refreshProducts(), db.refreshLogs()]);
+    haptic.success();
+    setFeedback({
+      type: successCount > 0 ? 'success' : 'error',
+      msg: `${t('export_count_result') || 'Xuất'} ${successCount}/${scanQueue.length} ${t('products_text') || 'sản phẩm'}`
+    });
+    setScanQueue([]);
+    setIsProcessing(false);
+    refreshApp();
+  };
+
+  // Batch import all items in scan queue
+  const handleQueueImport = async () => {
+    if (scanQueue.length === 0 || isProcessing) return;
+    setIsProcessing(true);
+    haptic.light();
+
+    let successCount = 0;
+
+    for (const item of scanQueue) {
+      const product = item.product;
+      try {
+        const noteText = customerName ? `[${customerName}] ${note}` : note;
+        await db.updateProductStock(
+          product.id,
+          product.currentPhysicalStock + item.quantity,
+          'IMPORT',
+          item.quantity,
+          noteText || `Batch import x${item.quantity}`
+        );
+        successCount++;
+      } catch {
+        // Silent fail
+      }
+    }
+
+    await Promise.all([db.refreshProducts(), db.refreshLogs()]);
+    haptic.success();
+    setFeedback({
+      type: 'success',
+      msg: `${t('import_count_result') || 'Nhập'} ${successCount}/${scanQueue.length} ${t('products_text') || 'sản phẩm'}`
+    });
+    setScanQueue([]);
+    setIsProcessing(false);
+    refreshApp();
+  };
+
+  // Remove item from scan queue
+  const removeFromQueue = (productId: number) => {
+    setScanQueue(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  // Clear entire queue
+  const clearQueue = () => {
+    setScanQueue([]);
+    setFeedback(null);
   };
 
   // Quick export all - 1 of each product
@@ -1324,6 +1458,25 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         <div className="px-4 -mt-4 pb-4 md:pb-0">
           <div className="max-w-lg mx-auto space-y-4">
 
+            {/* Continuous Scan Toggle */}
+            <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm mb-4">
+              <div className="flex items-center gap-3">
+                <QrCode className="w-5 h-5 text-indigo-500" />
+                <div>
+                  <p className="font-medium text-slate-800">Quét liên tục</p>
+                  <p className="text-xs text-slate-500">Thêm nhiều SP vào hàng chờ</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setContinuousMode(prev => !prev)}
+                className={`relative w-12 h-7 rounded-full transition-colors ${continuousMode ? 'bg-indigo-500' : 'bg-slate-200'
+                  }`}
+              >
+                <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${continuousMode ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+              </button>
+            </div>
+
             {/* Camera Button / Scanner */}
             {!showCamera ? (
               <button
@@ -1347,6 +1500,65 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                 >
                   <X className="w-5 h-5" />
                 </button>
+                {/* Continuous mode indicator */}
+                {continuousMode && (
+                  <div className="absolute top-3 left-3 bg-indigo-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    Quét liên tục
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Scan Queue */}
+            {scanQueue.length > 0 && (
+              <div className="mt-4 bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="p-4 border-b flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Package className="w-5 h-5 text-indigo-500" />
+                    Hàng chờ ({scanQueue.length})
+                  </h3>
+                  <button onClick={clearQueue} className="text-xs text-red-500 hover:underline">
+                    Xóa tất cả
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto divide-y">
+                  {scanQueue.map(item => (
+                    <div key={item.product.id} className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-sm font-bold text-slate-600">
+                          x{item.quantity}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-800 text-sm">{item.product.name}</p>
+                          <p className="text-xs text-slate-500">{item.product.code}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFromQueue(item.product.id)}
+                        className="p-1 text-slate-400 hover:text-red-500"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border-t flex gap-2">
+                  <button
+                    onClick={handleQueueExport}
+                    disabled={isProcessing}
+                    className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-xl disabled:opacity-50"
+                  >
+                    {isProcessing ? '...' : `Xuất kho (${scanQueue.reduce((s, i) => s + i.quantity, 0)})`}
+                  </button>
+                  <button
+                    onClick={handleQueueImport}
+                    disabled={isProcessing}
+                    className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl disabled:opacity-50"
+                  >
+                    {isProcessing ? '...' : `Nhập kho (${scanQueue.reduce((s, i) => s + i.quantity, 0)})`}
+                  </button>
+                </div>
               </div>
             )}
 
