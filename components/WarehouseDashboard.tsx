@@ -192,7 +192,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
         { key: 'scanner', label: t('nav_scanner') || 'Quét QR', icon: QrCode, count: 0 },
         { key: 'prepare', label: t('to_prepare') || 'Chuẩn bị', icon: Package, count: prepareTasks.length },
         { key: 'clean', label: t('to_clean') || 'Vệ sinh', icon: Sparkles, count: cleanTasks.length },
-        { key: 'history', label: t('history') || 'Lịch sử', icon: History, count: 0 },
+        { key: 'history', label: t('nav_history') || 'Lịch sử', icon: History, count: 0 },
     ];
 
     return (

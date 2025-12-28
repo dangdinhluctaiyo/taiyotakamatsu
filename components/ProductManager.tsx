@@ -870,6 +870,9 @@ const ProductCard: React.FC<{
 
           {/* Mobile: iOS-style simple icon buttons */}
           <div className="flex md:hidden items-center gap-0.5">
+            <button onClick={onHistory} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-500">
+              <History className="w-3.5 h-3.5" />
+            </button>
             <button onClick={onSerial} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-500">
               <Tag className="w-3.5 h-3.5" />
             </button>
