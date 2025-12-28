@@ -15,6 +15,7 @@ import { QRGenerator } from './components/QRGenerator';
 import { WarehouseDashboard } from './components/WarehouseDashboard';
 import { AIChat } from './components/AiChat';
 import { EquipmentSetManager } from './components/EquipmentSetManager';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 
 import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen, QrCode, Warehouse } from 'lucide-react';
 import { db } from './services/db';
@@ -33,7 +34,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE' | 'EQUIPMENT_SETS'>('WAREHOUSE');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE' | 'EQUIPMENT_SETS' | 'ANALYTICS'>('WAREHOUSE');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -191,6 +192,7 @@ function AppContent() {
                   <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
                   <NavButton active={view === 'QR_GENERATOR'} onClick={() => setView('QR_GENERATOR')} icon={<QrCode />} label={t('nav_qr_generator') || 'Tạo QR'} />
                   <NavButton active={view === 'EQUIPMENT_SETS'} onClick={() => setView('EQUIPMENT_SETS')} icon={<Package />} label={t('nav_equipment_sets')} />
+                  <NavButton active={view === 'ANALYTICS'} onClick={() => setView('ANALYTICS')} icon={<TrendingUp />} label={'Thống kê'} />
                   <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
                 </nav>
               )}
@@ -525,6 +527,8 @@ function AppContent() {
           {view === 'EQUIPMENT_SETS' && <EquipmentSetManager refreshApp={refreshApp} />}
 
           {view === 'WAREHOUSE' && <WarehouseDashboard refreshApp={refreshApp} />}
+
+          {view === 'ANALYTICS' && <AnalyticsDashboard refreshApp={refreshApp} />}
         </div>
       </main>
 
