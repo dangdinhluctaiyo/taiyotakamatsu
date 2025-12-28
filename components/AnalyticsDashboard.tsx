@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { db } from '../services/db';
 import { t } from '../services/i18n';
-import { BarChart3, TrendingUp, Package, ShoppingCart, Calendar, DollarSign, AlertTriangle, CheckCircle, Download, FileSpreadsheet, Database } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, ShoppingCart, Calendar, DollarSign, AlertTriangle, CheckCircle, Download, FileSpreadsheet, Database, Upload } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
     refreshApp?: () => void;
@@ -10,8 +10,10 @@ interface AnalyticsDashboardProps {
 /**
  * Analytics Dashboard - Statistics and charts for management
  */
-export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = () => {
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ refreshApp }) => {
     const [exporting, setExporting] = useState(false);
+    const [importStatus, setImportStatus] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Export products to CSV
     const exportProductsCSV = () => {
@@ -62,6 +64,53 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = () => {
         a.download = `taiyotakamatsu_backup_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    // Import backup from JSON file
+    const handleImportBackup = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const backup = JSON.parse(e.target?.result as string);
+
+                if (!backup.products || !backup.exportedAt) {
+                    setImportStatus('❌ File không hợp lệ');
+                    setTimeout(() => setImportStatus(null), 3000);
+                    return;
+                }
+
+                const confirmed = window.confirm(
+                    `Nhập backup từ ${new Date(backup.exportedAt).toLocaleString()}?\n\n` +
+                    `Sản phẩm: ${backup.products?.length || 0}\n` +
+                    `Khách hàng: ${backup.customers?.length || 0}\n\n` +
+                    `⚠️ Dữ liệu mới sẽ được merge.`
+                );
+
+                if (!confirmed) return;
+
+                let addedProducts = 0;
+                if (backup.products) {
+                    for (const p of backup.products) {
+                        if (!db.products.find(ep => ep.code === p.code)) {
+                            db.products.push(p);
+                            addedProducts++;
+                        }
+                    }
+                }
+
+                setImportStatus(`✅ Đã thêm ${addedProducts} sản phẩm mới`);
+                setTimeout(() => setImportStatus(null), 3000);
+                refreshApp?.();
+            } catch {
+                setImportStatus('❌ Lỗi đọc file');
+                setTimeout(() => setImportStatus(null), 3000);
+            }
+        };
+        reader.readAsText(file);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     // Helper to download CSV
@@ -179,7 +228,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = () => {
                         <Database className="w-4 h-4" />
                         Backup
                     </button>
+                    <label className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        Import
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportBackup}
+                            className="hidden"
+                        />
+                    </label>
                 </div>
+                {importStatus && (
+                    <p className="text-sm font-medium mt-2">{importStatus}</p>
+                )}
             </div>
 
             {/* Stats Grid */}
