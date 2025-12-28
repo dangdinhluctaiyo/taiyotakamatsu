@@ -3,9 +3,12 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
-import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag, RefreshCw } from 'lucide-react';
 import { useToast } from './Toast';
 import { SerialManager } from './SerialManager';
+import { SkeletonProductGrid } from './Skeleton';
+import { usePullToRefresh, PullIndicator } from '../hooks/usePullToRefresh';
+import { useDebounce } from '../hooks/useDebounce';
 
 export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
   const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('GRID');
@@ -22,6 +25,20 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [showSerialFor, setShowSerialFor] = useState<Product | null>(null);
   const [serialCounts, setSerialCounts] = useState<{ total: number, available: number, on_rent: number, dirty: number, broken: number }>({ total: 0, available: 0, on_rent: 0, dirty: 0, broken: 0 });
+  const [isLoading, setIsLoading] = useState(db.products.length === 0);
+
+  // Debounce search term for performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Pull-to-refresh
+  const handleRefresh = async () => {
+    await db.refreshProducts();
+    refreshApp();
+  };
+
+  const { pullDistance, isRefreshing, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: handleRefresh
+  });
 
   const { success, error } = useToast();
   const isAdmin = db.currentUser?.role === 'admin';
@@ -32,6 +49,13 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [newImageUrl, setNewImageUrl] = useState('');
   const [imageInputMode, setImageInputMode] = useState<'url' | 'upload'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update loading state when products load
+  useEffect(() => {
+    if (db.products.length > 0) {
+      setIsLoading(false);
+    }
+  }, [db.products.length]);
 
   // Load serial counts when viewing serialized product
   useEffect(() => {
@@ -70,7 +94,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
   const filteredProducts = useMemo(() => {
     return db.products.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || p.code.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'ALL' || p.category === selectedCategory;
 
       let matchesStock = true;
@@ -80,7 +104,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
       return matchesSearch && matchesCategory && matchesStock;
     });
-  }, [db.products, searchTerm, selectedCategory, stockFilter]);
+  }, [db.products, debouncedSearchTerm, selectedCategory, stockFilter]);
 
   const categories = useMemo(() => {
     const cats = new Set(db.products.map(p => p.category).filter(Boolean));
@@ -256,86 +280,94 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
             </div>
           </div>
 
-          {/* Product Grid */}
-          {filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center">
-              <Box className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-500 font-medium">{t('no_equipment_found')}</p>
-            </div>
-          ) : viewMode === 'GRID' || window.innerWidth < 768 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-              {filteredProducts.map(p => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  onView={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}
-                  onEdit={() => handleEdit(p)}
-                  onDelete={() => handleDelete(p.id)}
-                  onQR={() => setShowQRFor(p)}
-                  onHistory={() => openHistory(p)}
-                  onSerial={() => setShowSerialFor(p)}
-                  isAdmin={isAdmin}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase">
-                  <tr>
-                    <th className="p-4">{t('product')}</th>
-                    <th className="p-4">{t('category')}</th>
-                    <th className="p-4">{t('location')}</th>
-                    <th className="p-4 text-center">{t('in_stock')}</th>
-                    <th className="p-4 text-center">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredProducts.map(p => {
-                    const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
-                    const isOut = p.currentPhysicalStock === 0;
-                    const stockPercent = (p.currentPhysicalStock / p.totalOwned) * 100;
+          {/* Pull-to-refresh indicator */}
+          <PullIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
 
-                    return (
-                      <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <img src={p.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100" />
-                            <div>
-                              <p className="font-semibold text-slate-800">{p.name}</p>
-                              <p className="text-xs text-slate-400 font-mono">{p.code}</p>
+          {/* Product Grid with pull-to-refresh */}
+          <div {...pullHandlers}>
+            {isLoading ? (
+              /* Skeleton loading */
+              <SkeletonProductGrid count={8} />
+            ) : filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center">
+                <Box className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">{t('no_equipment_found')}</p>
+              </div>
+            ) : viewMode === 'GRID' || window.innerWidth < 768 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                {filteredProducts.map(p => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onView={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}
+                    onEdit={() => handleEdit(p)}
+                    onDelete={() => handleDelete(p.id)}
+                    onQR={() => setShowQRFor(p)}
+                    onHistory={() => openHistory(p)}
+                    onSerial={() => setShowSerialFor(p)}
+                    isAdmin={isAdmin}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase">
+                    <tr>
+                      <th className="p-4">{t('product')}</th>
+                      <th className="p-4">{t('category')}</th>
+                      <th className="p-4">{t('location')}</th>
+                      <th className="p-4 text-center">{t('in_stock')}</th>
+                      <th className="p-4 text-center">{t('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredProducts.map(p => {
+                      const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
+                      const isOut = p.currentPhysicalStock === 0;
+                      const stockPercent = (p.currentPhysicalStock / p.totalOwned) * 100;
+
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <img src={p.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100" />
+                              <div>
+                                <p className="font-semibold text-slate-800">{p.name}</p>
+                                <p className="text-xs text-slate-400 font-mono">{p.code}</p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm text-slate-600">{p.category}</td>
-                        <td className="p-4 text-sm text-slate-600">{p.location || '-'}</td>
-                        <td className="p-4">
-                          <div className="max-w-[100px] mx-auto">
-                            <div className="flex justify-between text-xs font-bold mb-1">
-                              <span className={isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}>{p.currentPhysicalStock}</span>
-                              <span className="text-slate-400">/ {p.totalOwned}</span>
+                          </td>
+                          <td className="p-4 text-sm text-slate-600">{p.category}</td>
+                          <td className="p-4 text-sm text-slate-600">{p.location || '-'}</td>
+                          <td className="p-4">
+                            <div className="max-w-[100px] mx-auto">
+                              <div className="flex justify-between text-xs font-bold mb-1">
+                                <span className={isOut ? 'text-red-500' : isLow ? 'text-orange-500' : 'text-green-600'}>{p.currentPhysicalStock}</span>
+                                <span className="text-slate-400">/ {p.totalOwned}</span>
+                              </div>
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${stockPercent}%` }} />
+                              </div>
                             </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${stockPercent}%` }} />
+                          </td>
+                          <td className="p-4" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-center gap-1">
+                              <IconBtn onClick={() => openHistory(p)} icon={<History className="w-4 h-4" />} />
+                              <IconBtn onClick={() => setShowQRFor(p)} icon={<QrCode className="w-4 h-4" />} />
+                              <IconBtn onClick={() => setShowSerialFor(p)} icon={<Tag className="w-4 h-4 text-purple-500" />} />
+                              {isAdmin && <IconBtn onClick={() => handleEdit(p)} icon={<Edit className="w-4 h-4" />} />}
+                              {isAdmin && <IconBtn onClick={() => handleDelete(p.id)} icon={<Trash2 className="w-4 h-4 text-red-500" />} />}
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-center gap-1">
-                            <IconBtn onClick={() => openHistory(p)} icon={<History className="w-4 h-4" />} />
-                            <IconBtn onClick={() => setShowQRFor(p)} icon={<QrCode className="w-4 h-4" />} />
-                            <IconBtn onClick={() => setShowSerialFor(p)} icon={<Tag className="w-4 h-4 text-purple-500" />} />
-                            {isAdmin && <IconBtn onClick={() => handleEdit(p)} icon={<Edit className="w-4 h-4" />} />}
-                            {isAdmin && <IconBtn onClick={() => handleDelete(p.id)} icon={<Trash2 className="w-4 h-4 text-red-500" />} />}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
           {filteredProducts.length > 0 && (
