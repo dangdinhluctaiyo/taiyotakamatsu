@@ -15,6 +15,7 @@ import { QRGenerator } from './components/QRGenerator';
 import { WarehouseDashboard } from './components/WarehouseDashboard';
 import { AIChat } from './components/AiChat';
 import { EquipmentSetManager } from './components/EquipmentSetManager';
+import { ThemeToggle } from './components/ThemeToggle';
 
 import { LayoutDashboard, ShoppingCart, Box, RotateCcw, ChevronRight, Package, Truck, Users, LogOut, User, TrendingUp, UserCircle, ArrowUp, ScanLine, History, FolderOpen, QrCode, Warehouse } from 'lucide-react';
 import { db } from './services/db';
@@ -216,6 +217,9 @@ function AppContent() {
 
           {showUserMenu && (
             <div className="mt-2 pt-2 border-t border-stone-100 space-y-1">
+              <div className="flex justify-center py-2">
+                <ThemeToggle />
+              </div>
               <button onClick={handleLogout} className="flex items-center text-xs text-stone-500 hover:text-stone-800 hover:bg-stone-100 w-full px-3 py-2 rounded-md transition-colors gap-2">
                 <LogOut className="w-3.5 h-3.5" /> {t('logout')}
               </button>
@@ -284,6 +288,7 @@ function AppContent() {
             {view === 'ORDERS' && (
               <button onClick={() => setShowCreateModal(true)} className="bg-[--ios-blue] text-white p-2.5 rounded-xl shadow-lg active:scale-95 transition-transform"><PlusIcon /></button>
             )}
+            <ThemeToggle compact />
             <LanguageSwitcher compact />
             <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title={t('logout')}>
               <LogOut className="w-5 h-5" />
