@@ -3,12 +3,14 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
-import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from './Toast';
 import { SerialManager } from './SerialManager';
 import { SkeletonProductGrid } from './Skeleton';
 import { usePullToRefresh, PullIndicator } from '../hooks/usePullToRefresh';
 import { useDebounce } from '../hooks/useDebounce';
+import { LazyImage } from './LazyImage';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
   const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('GRID');
@@ -105,6 +107,12 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       return matchesSearch && matchesCategory && matchesStock;
     });
   }, [db.products, debouncedSearchTerm, selectedCategory, stockFilter]);
+
+  // Infinite scroll - load 20 products at a time
+  const { visibleItems: visibleProducts, hasMore, loadMore } = useInfiniteScroll<Product>({
+    items: filteredProducts,
+    pageSize: 20
+  });
 
   const categories = useMemo(() => {
     const cats = new Set(db.products.map(p => p.category).filter(Boolean));
@@ -294,21 +302,35 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                 <p className="text-slate-500 font-medium">{t('no_equipment_found')}</p>
               </div>
             ) : viewMode === 'GRID' || window.innerWidth < 768 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                {filteredProducts.map(p => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    onView={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}
-                    onEdit={() => handleEdit(p)}
-                    onDelete={() => handleDelete(p.id)}
-                    onQR={() => setShowQRFor(p)}
-                    onHistory={() => openHistory(p)}
-                    onSerial={() => setShowSerialFor(p)}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                  {visibleProducts.map(p => (
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      onView={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}
+                      onEdit={() => handleEdit(p)}
+                      onDelete={() => handleDelete(p.id)}
+                      onQR={() => setShowQRFor(p)}
+                      onHistory={() => openHistory(p)}
+                      onSerial={() => setShowSerialFor(p)}
+                      isAdmin={isAdmin}
+                    />
+                  ))}
+                </div>
+                {/* Load More Button */}
+                {hasMore && (
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={loadMore}
+                      className="px-6 py-3 bg-white border-2 border-indigo-500 text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all flex items-center gap-2"
+                    >
+                      <Loader2 className="w-4 h-4" />
+                      {t('load_more') || 'Tải thêm'} ({visibleProducts.length}/{filteredProducts.length})
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
                 <table className="w-full text-left">
@@ -322,7 +344,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredProducts.map(p => {
+                    {visibleProducts.map(p => {
                       const isLow = p.currentPhysicalStock > 0 && p.currentPhysicalStock <= 2;
                       const isOut = p.currentPhysicalStock === 0;
                       const stockPercent = (p.currentPhysicalStock / p.totalOwned) * 100;
@@ -331,7 +353,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                         <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setViewDetailFor(p); setCurrentImageIndex(0); }}>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <img src={p.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100" />
+                              <LazyImage src={p.imageUrl || ''} alt="" className="w-12 h-12 rounded-xl bg-slate-100" />
                               <div>
                                 <p className="font-semibold text-slate-800">{p.name}</p>
                                 <p className="text-xs text-slate-400 font-mono">{p.code}</p>
@@ -365,6 +387,17 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                     })}
                   </tbody>
                 </table>
+                {/* Load More for Table */}
+                {hasMore && (
+                  <div className="p-4 bg-slate-50 text-center">
+                    <button
+                      onClick={loadMore}
+                      className="px-4 py-2 text-indigo-600 font-medium hover:underline"
+                    >
+                      {t('load_more') || 'Tải thêm'} ({visibleProducts.length}/{filteredProducts.length})
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -372,7 +405,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
           {/* Footer */}
           {filteredProducts.length > 0 && (
             <p className="text-center text-xs text-slate-400">
-              {t('showing_count')?.replace('{0}', String(filteredProducts.length)).replace('{1}', String(db.products.length))}
+              {t('showing_count')?.replace('{0}', String(visibleProducts.length)).replace('{1}', String(filteredProducts.length))}
             </p>
           )}
         </div>

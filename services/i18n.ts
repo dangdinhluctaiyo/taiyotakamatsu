@@ -549,6 +549,7 @@ const translations = {
     serial_select_all: 'Chọn tất cả',
     serial_export_count: 'Xuất {0} serial',
     serial_import_count: 'Nhập {0} serial',
+    load_more: 'Tải thêm',
   },
 
   ja: {
@@ -1097,6 +1098,7 @@ const translations = {
     serial_select_all: 'すべて選択',
     serial_export_count: '{0}台を出庫',
     serial_import_count: '{0}台を入庫',
+    load_more: 'もっと見る',
   }
 };
 
