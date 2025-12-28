@@ -1249,7 +1249,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         </div>
 
         {/* Fixed Bottom Actions */}
-        <div className="flex-shrink-0 bg-white border-t shadow-lg p-4 pb-[calc(1rem+env(safe-area-inset-bottom)+80px)]">
+        <div className="flex-shrink-0 bg-white border-t shadow-lg p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           {scannedProduct.isSerialized ? (
             /* Single button based on mode for serialized products */
             <button
