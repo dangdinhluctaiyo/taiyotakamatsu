@@ -55,45 +55,79 @@ export class SupabaseDB {
   }
 
   async refresh() {
-    // Longer delay to ensure Supabase has processed updates
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // No delay needed - Supabase updates are immediately consistent
     this.initialized = false;
     await this.init();
   }
 
+  // Partial refresh methods for better performance
+  async refreshProducts() {
+    this.products = await this.fetchProducts();
+  }
+
+  async refreshOrders() {
+    this.orders = await this.fetchOrders();
+  }
+
+  async refreshLogs() {
+    this.logs = await this.fetchLogs();
+  }
+
+  async refreshCustomers() {
+    this.customers = await this.fetchCustomers();
+  }
+
   // ============ FETCH DATA ============
   private async fetchProducts(): Promise<Product[]> {
-    const { data, error } = await supabase.from('products').select('*');
+    // OPTIMIZED: Only fetch essential columns, exclude large 'images' array (base64)
+    // This reduces response size significantly for faster loading
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, code, name, category, price_per_day, total_owned, current_physical_stock, image_url, location, specs, is_serialized');
     if (error) throw error;
     return (data || []).map((p: any) => ({
       id: p.id, code: p.code, name: p.name, category: p.category,
       pricePerDay: p.price_per_day, totalOwned: p.total_owned,
       currentPhysicalStock: p.current_physical_stock,
-      imageUrl: p.image_url, images: p.images || [],
+      imageUrl: p.image_url, images: [], // Images loaded on-demand
       location: p.location, specs: p.specs, isSerialized: p.is_serialized
     }));
   }
 
   private async fetchOrders(): Promise<Order[]> {
-    const { data: orders, error } = await supabase.from('orders').select('*').order('id', { ascending: false });
+    // Use JOIN to fetch orders with items in a single query (optimized from N+1)
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (*)
+      `)
+      .order('id', { ascending: false });
+
     if (error) throw error;
 
-    const result: Order[] = [];
-    for (const o of orders || []) {
-      const { data: items } = await supabase.from('order_items').select('*').eq('order_id', o.id);
-      result.push({
-        id: o.id, customerId: o.customer_id, rentalStartDate: o.rental_start_date,
-        expectedReturnDate: o.expected_return_date, actualReturnDate: o.actual_return_date,
-        status: o.status as OrderStatus, totalAmount: o.total_amount, finalAmount: o.final_amount,
-        note: o.note, completedBy: o.completed_by,
-        items: (items || []).map((i: any) => ({
-          itemId: i.id.toString(), productId: i.product_id, quantity: i.quantity,
-          isExternal: i.is_external, supplierId: i.supplier_id,
-          exportedQuantity: i.exported_quantity, returnedQuantity: i.returned_quantity, note: i.note
-        }))
-      });
-    }
-    return result;
+    return (orders || []).map((o: any) => ({
+      id: o.id,
+      customerId: o.customer_id,
+      rentalStartDate: o.rental_start_date,
+      expectedReturnDate: o.expected_return_date,
+      actualReturnDate: o.actual_return_date,
+      status: o.status as OrderStatus,
+      totalAmount: o.total_amount,
+      finalAmount: o.final_amount,
+      note: o.note,
+      completedBy: o.completed_by,
+      items: (o.order_items || []).map((i: any) => ({
+        itemId: i.id.toString(),
+        productId: i.product_id,
+        quantity: i.quantity,
+        isExternal: i.is_external,
+        supplierId: i.supplier_id,
+        exportedQuantity: i.exported_quantity,
+        returnedQuantity: i.returned_quantity,
+        note: i.note
+      }))
+    }));
   }
 
   private async fetchCustomers(): Promise<Customer[]> {
@@ -109,7 +143,12 @@ export class SupabaseDB {
   }
 
   private async fetchLogs(): Promise<InventoryLog[]> {
-    const { data, error } = await supabase.from('inventory_logs').select('*').order('timestamp', { ascending: false });
+    // Limit to 500 most recent logs for faster loading
+    const { data, error } = await supabase
+      .from('inventory_logs')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(500);
     if (error) throw error;
     return (data || []).map((l: any) => ({
       id: l.id, productId: l.product_id, orderId: l.order_id, actionType: l.action_type,
@@ -321,6 +360,17 @@ export class SupabaseDB {
   async deleteProduct(id: number) {
     await supabase.from('products').delete().eq('id', id);
     this.products = this.products.filter(p => p.id !== id);
+  }
+
+  // Fetch product images on-demand (not loaded initially for performance)
+  async fetchProductImages(productId: number): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('images')
+      .eq('id', productId)
+      .single();
+    if (error || !data) return [];
+    return data.images || [];
   }
 
   // ============ CUSTOMERS ============

@@ -3,7 +3,8 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
 import { Scanner as ScannerEmbed } from './Scanner';
-import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode } from 'lucide-react';
+import { InventoryHistory } from './InventoryHistory';
+import { Package, Sparkles, CheckCircle, Clock, RefreshCw, Scan, MapPin, User, QrCode, History } from 'lucide-react';
 
 interface Props {
     refreshApp: () => void;
@@ -30,7 +31,7 @@ interface CleanTask {
 }
 
 export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
-    const [activeTab, setActiveTab] = useState<'scanner' | 'prepare' | 'clean'>('scanner');
+    const [activeTab, setActiveTab] = useState<'scanner' | 'prepare' | 'clean' | 'history'>('scanner');
     const [loading, setLoading] = useState(true);
     const [prepareTasks, setPrepareTasks] = useState<PrepareTask[]>([]);
     const [cleanTasks, setCleanTasks] = useState<CleanTask[]>([]);
@@ -191,6 +192,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
         { key: 'scanner', label: t('nav_scanner') || 'Quét QR', icon: QrCode, count: 0 },
         { key: 'prepare', label: t('to_prepare') || 'Chuẩn bị', icon: Package, count: prepareTasks.length },
         { key: 'clean', label: t('to_clean') || 'Vệ sinh', icon: Sparkles, count: cleanTasks.length },
+        { key: 'history', label: t('history') || 'Lịch sử', icon: History, count: 0 },
     ];
 
     return (
@@ -418,6 +420,13 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                                         </div>
                                     ))
                                 )}
+                            </div>
+                        )}
+
+                        {/* History Tab */}
+                        {activeTab === 'history' && (
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <InventoryHistory refreshApp={refreshApp} embedded />
                             </div>
                         )}
                     </div>

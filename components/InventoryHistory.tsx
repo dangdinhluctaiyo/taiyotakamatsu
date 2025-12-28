@@ -4,7 +4,7 @@ import { t, i18n } from '../services/i18n';
 import { InventoryLog } from '../types';
 import { History, ArrowUpRight, ArrowDownLeft, Search, Edit, Trash2, X, Save } from 'lucide-react';
 
-export const InventoryHistory: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
+export const InventoryHistory: React.FC<{ refreshApp: () => void; embedded?: boolean }> = ({ refreshApp, embedded = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'EXPORT' | 'IMPORT' | 'ADJUST'>('ALL');
   const [editingLog, setEditingLog] = useState<InventoryLog | null>(null);

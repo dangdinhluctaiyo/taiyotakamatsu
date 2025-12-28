@@ -302,7 +302,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     if (finalCustomerName && !db.customers.some(c => c.name === finalCustomerName)) {
       try {
         await db.addCustomer({ name: finalCustomerName, phone: '' });
-        await refreshApp();
+        // PERF: Only refresh customers, not all data
+        await db.refreshCustomers();
       } catch (e) {
         console.error('Error creating customer:', e);
       }
@@ -324,16 +325,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       try {
         console.log('Exporting serials:', selectedSerialIds);
 
-        // Update each selected serial to ON_RENT
-        for (const serialId of selectedSerialIds) {
-          await supabase
-            .from('device_serials')
-            .update({
-              status: 'ON_RENT',
-              order_id: selectedOrderId || null
-            })
-            .eq('id', serialId);
-        }
+        // Batch update all selected serials to ON_RENT in a single query (optimized)
+        await supabase
+          .from('device_serials')
+          .update({
+            status: 'ON_RENT',
+            order_id: selectedOrderId || null
+          })
+          .in('id', selectedSerialIds);
         // Update stock count
         const exportQty = selectedSerialIds.length;
         if (selectedOrderId) {
@@ -359,7 +358,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           note: `出庫時清掃済み / Đã xuất kho (${serialNumbers})`
         });
 
-        await refreshApp();
+        // PERF: Only refresh products and logs, not all 6 tables
+        await Promise.all([db.refreshProducts(), db.refreshLogs()]);
 
         // Reset immediately
         setScannedProduct(null);
@@ -405,7 +405,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           note: `出庫時清掃済み / Đã xuất kho`
         });
 
-        await refreshApp();
+        // PERF: Only refresh products and logs, not all 6 tables
+        await Promise.all([db.refreshProducts(), db.refreshLogs()]);
 
         // Reset immediately
         setScannedProduct(null);
@@ -439,7 +440,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     if (finalCustomerName && !db.customers.some(c => c.name === finalCustomerName)) {
       try {
         await db.addCustomer({ name: finalCustomerName, phone: '' });
-        await refreshApp();
+        // PERF: Only refresh customers, not all data
+        await db.refreshCustomers();
       } catch (e) {
         console.error('Error creating customer:', e);
       }
@@ -461,16 +463,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       try {
         console.log('Importing serials:', selectedSerialIds);
 
-        // Update each selected serial to AVAILABLE (ready to use again)
-        for (const serialId of selectedSerialIds) {
-          await supabase
-            .from('device_serials')
-            .update({
-              status: 'AVAILABLE',
-              order_id: null // Clear order reference
-            })
-            .eq('id', serialId);
-        }
+        // Batch update all selected serials to AVAILABLE in a single query (optimized)
+        await supabase
+          .from('device_serials')
+          .update({
+            status: 'AVAILABLE',
+            order_id: null // Clear order reference
+          })
+          .in('id', selectedSerialIds);
 
         // Update stock count
         const importQty = selectedSerialIds.length;
@@ -481,7 +481,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', importQty, noteWithCustomer || t('import_stock'));
         }
 
-        await refreshApp();
+        // PERF: Only refresh products and logs, not all 6 tables
+        await Promise.all([db.refreshProducts(), db.refreshLogs()]);
 
         // Reset immediately
         setScannedProduct(null);
@@ -511,7 +512,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           await db.updateProductStock(scannedProduct.id, newStock, 'IMPORT', quantity, noteWithCustomer || t('import_stock'));
         }
 
-        await refreshApp();
+        // PERF: Only refresh products and logs, not all 6 tables
+        await Promise.all([db.refreshProducts(), db.refreshLogs()]);
 
         // Reset immediately
         setScannedProduct(null);
@@ -570,7 +572,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         }
       }
 
-      await refreshApp();
+      // PERF: Batch refresh for set operations
+      await Promise.all([db.refreshProducts(), db.refreshLogs()]);
       setFeedback({
         type: successCount > 0 ? 'success' : 'error',
         msg: `Đã xuất ${successCount}/${scannedSet.items.length} sản phẩm${failCount > 0 ? ` (${failCount} lỗi)` : ''}`
@@ -609,7 +612,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         }
       }
 
-      await refreshApp();
+      // PERF: Batch refresh for set operations
+      await Promise.all([db.refreshProducts(), db.refreshLogs()]);
       setFeedback({
         type: 'success',
         msg: `Đã nhập ${successCount}/${scannedSet.items.length} sản phẩm`
@@ -712,7 +716,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         }
       }
 
-      await refreshApp();
+      // PERF: Batch refresh for set operations
+      await Promise.all([db.refreshProducts(), db.refreshLogs()]);
 
       const messages = [];
       if (exportCount > 0) messages.push(`${t('export_count_result')} ${exportCount}`);
@@ -750,7 +755,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       } catch { }
     }
 
-    await refreshApp();
+    // PERF: Quick export only needs products and logs refresh
+    await Promise.all([db.refreshProducts(), db.refreshLogs()]);
     vibrate([100, 50, 100]);
     setFeedback({ type: 'success', msg: `${t('export_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
@@ -773,7 +779,8 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       } catch { }
     }
 
-    await refreshApp();
+    // PERF: Quick import only needs products and logs refresh
+    await Promise.all([db.refreshProducts(), db.refreshLogs()]);
     vibrate([100, 50, 100]);
     setFeedback({ type: 'success', msg: `${t('import_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
@@ -1114,18 +1121,6 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     <Plus className="w-8 h-8 text-slate-600" />
                   </button>
                 </div>
-                {/* Quick quantity buttons */}
-                <div className="flex gap-2 mt-4">
-                  {[1, 5, 10, 20].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setQuantity(n)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${quantity === n ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -1178,7 +1173,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
             </div>
 
             {/* Customer Name Input with Auto-suggest */}
-            <div className={`bg-white rounded-2xl shadow-sm p-4 ${customerError ? 'ring-2 ring-red-500 animate-pulse' : ''}`}>
+            <div className={`bg-white rounded-2xl shadow-sm p-4 relative z-20 ${customerError ? 'ring-2 ring-red-500 animate-pulse' : ''}`}>
               <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
                 <User className="w-4 h-4" />
                 {t('customer_name') || 'Tên khách hàng'} <span className="text-red-500">*</span>

@@ -55,6 +55,19 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
     }
   }, [viewDetailFor]);
 
+  // Load product images on-demand when viewing details (performance optimization)
+  const [productImages, setProductImages] = useState<string[]>([]);
+  useEffect(() => {
+    if (viewDetailFor) {
+      // First use cached imageUrl, then load full images array
+      setProductImages(viewDetailFor.imageUrl ? [viewDetailFor.imageUrl] : []);
+      // Async load additional images from DB
+      db.fetchProductImages(viewDetailFor.id).then(imgs => {
+        if (imgs.length > 0) setProductImages(imgs);
+      });
+    }
+  }, [viewDetailFor?.id]);
+
   const filteredProducts = useMemo(() => {
     return db.products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
@@ -112,9 +125,11 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       isSerialized: formData.isSerialized || false
     };
     await db.saveProduct(productToSave);
-    refreshApp();
+    // Close modal immediately for better UX, refresh in background
     setIsModalOpen(false);
     success(editingProduct ? (t('update_success') || 'Cập nhật thành công') : (t('create_success') || 'Tạo mới thành công'));
+    // Background refresh - don't await to avoid blocking
+    refreshApp();
   };
 
   const addImage = () => {
@@ -152,10 +167,14 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       .sort((a, b) => new Date(a.rentalStartDate).getTime() - new Date(b.rentalStartDate).getTime());
   };
 
+  // For detail view, use on-demand loaded images; for list view, use basic imageUrl
   const getAllImages = (p: Product) => {
-    const imgs = [...(p.images || [])];
-    if (p.imageUrl && !imgs.includes(p.imageUrl)) imgs.unshift(p.imageUrl);
-    return imgs.length > 0 ? imgs : ['https://via.placeholder.com/400x300?text=No+Image'];
+    // If viewing this product, use on-demand loaded images
+    if (viewDetailFor?.id === p.id && productImages.length > 0) {
+      return productImages;
+    }
+    // Fallback to imageUrl only (images not loaded in initial fetch for performance)
+    return p.imageUrl ? [p.imageUrl] : ['https://via.placeholder.com/400x300?text=No+Image'];
   };
 
   return (
