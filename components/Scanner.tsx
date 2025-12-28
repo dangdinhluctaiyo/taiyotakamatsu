@@ -6,7 +6,7 @@ import { t } from '../services/i18n';
 import { Product, EquipmentSet, DeviceSerial } from '../types';
 import { useToast } from './Toast';
 import { useHaptic } from '../hooks/useHaptic';
-import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode, Tag, Check } from 'lucide-react';
+import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode, Tag, Check, Zap } from 'lucide-react';
 
 declare const Html5QrcodeScanner: any;
 
@@ -37,6 +37,9 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const [continuousMode, setContinuousMode] = useState(false);
   const [scanQueue, setScanQueue] = useState<{ product: Product; quantity: number; time: Date }[]>([]);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+
+  // Flashlight control
+  const [flashlightOn, setFlashlightOn] = useState(false);
 
   const [availableSerials, setAvailableSerials] = useState<DeviceSerial[]>([]);
   const [selectedSerialIds, setSelectedSerialIds] = useState<number[]>([]);
@@ -1507,6 +1510,26 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     Quét liên tục
                   </div>
                 )}
+                {/* Flashlight toggle */}
+                <button
+                  onClick={async () => {
+                    if (scannerRef.current) {
+                      try {
+                        const state = await scannerRef.current.getRunningTrackCameraCapabilities();
+                        if (state?.torchFeature?.isSupported?.()) {
+                          await state.torchFeature.apply(!flashlightOn);
+                          setFlashlightOn(!flashlightOn);
+                        }
+                      } catch (e) {
+                        console.log('Torch not supported');
+                      }
+                    }
+                  }}
+                  className={`absolute bottom-3 left-3 p-2 rounded-full transition-colors ${flashlightOn ? 'bg-yellow-400 text-black' : 'bg-white/20 text-white'}`}
+                  title="Bật/Tắt đèn flash"
+                >
+                  <Zap className="w-5 h-5" />
+                </button>
               </div>
             )}
 
