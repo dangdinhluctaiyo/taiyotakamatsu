@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { t } from '../services/i18n';
 import { Product, EquipmentSet, DeviceSerial } from '../types';
 import { useToast } from './Toast';
+import { useHaptic } from '../hooks/useHaptic';
 import { Scan, ArrowUpCircle, ArrowDownCircle, CheckCircle, Search, Camera, X, Package, FileText, User, Minus, Plus, AlertCircle, Box, ChevronDown, QrCode, Tag, Check } from 'lucide-react';
 
 declare const Html5QrcodeScanner: any;
@@ -17,6 +18,7 @@ interface ScannerProps {
 
 export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, onClearPendingCode }) => {
   const { error: toastError } = useToast();
+  const haptic = useHaptic();
   const [inputQuery, setInputQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedSet, setScannedSet] = useState<EquipmentSet | null>(null);
@@ -214,16 +216,9 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     };
   }, [showCamera]);
 
-  // Haptic feedback for scan success
-  const vibrate = (pattern: number | number[] = 50) => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(pattern);
-    }
-  };
-
   const onScanSuccess = (decodedText: string) => {
     setShowCamera(false);
-    vibrate([50, 30, 50]); // Short vibration pattern for feedback
+    haptic.medium(); // Haptic feedback for scan
 
     // Check if this is a URL-based Equipment Set QR (format: https://domain/scan?code=SET-001)
     let setCode: string | null = null;
@@ -241,7 +236,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setScannedProduct(null);
         setSearchResults([]);
         setInputQuery('');
-        vibrate(100); // Longer vibration for success
+        haptic.success(); // Longer vibration for success
         return;
       } else {
         setFeedback({ type: 'error', msg: `${t('set_not_found')}: ${setCode}` });
@@ -743,7 +738,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const handleQuickExport = async () => {
     if (!scannedSet || isProcessingSet) return;
     setIsProcessingSet(true);
-    vibrate(50);
+    haptic.light();
 
     let successCount = 0;
     for (const productId of scannedSet.productIds) {
@@ -757,7 +752,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // PERF: Quick export only needs products and logs refresh
     await Promise.all([db.refreshProducts(), db.refreshLogs()]);
-    vibrate([100, 50, 100]);
+    haptic.success();
     setFeedback({ type: 'success', msg: `${t('export_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
     setTimeout(() => { setScannedSet(null); setFeedback(null); }, 500);
@@ -767,7 +762,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
   const handleQuickImport = async () => {
     if (!scannedSet || isProcessingSet) return;
     setIsProcessingSet(true);
-    vibrate(50);
+    haptic.light();
 
     let successCount = 0;
     for (const productId of scannedSet.productIds) {
@@ -781,7 +776,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
 
     // PERF: Quick import only needs products and logs refresh
     await Promise.all([db.refreshProducts(), db.refreshLogs()]);
-    vibrate([100, 50, 100]);
+    haptic.success();
     setFeedback({ type: 'success', msg: `${t('import_count_result')} ${successCount}/${scannedSet.productIds.length}` });
     setIsProcessingSet(false);
     setTimeout(() => { setScannedSet(null); setFeedback(null); }, 500);
