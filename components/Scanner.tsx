@@ -361,7 +361,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
       if (selectedSerialIds.length === 0) {
-        setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để xuất' });
+        setFeedback({ type: 'error', msg: t('select_serial_to_export') });
         setIsProcessing(false);
         return;
       }
@@ -399,7 +399,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           quantity: exportQty,
           staff_id: db.currentUser?.id,
           staff_name: db.currentUser?.name,
-          note: `出庫時清掃済み / Đã xuất kho (${serialNumbers})`
+          note: `出庫時清掃済み`
         });
 
         // PERF: Only refresh products and logs, not all 6 tables
@@ -415,7 +415,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setIsProcessing(false);
       } catch (e: any) {
         console.error('Export error:', e);
-        setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+        setFeedback({ type: 'error', msg: e.message || t('export_error') });
         setIsProcessing(false);
       }
     } else {
@@ -446,7 +446,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
           quantity: quantity,
           staff_id: db.currentUser?.id,
           staff_name: db.currentUser?.name,
-          note: `出庫時清掃済み / Đã xuất kho`
+          note: `出庫時清掃済み`
         });
 
         // PERF: Only refresh products and logs, not all 6 tables
@@ -461,7 +461,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setIsProcessing(false);
       } catch (e: any) {
         console.error('Export error:', e);
-        setFeedback({ type: 'error', msg: e.message || 'Lỗi xuất kho' });
+        setFeedback({ type: 'error', msg: e.message || t('export_error') });
         setIsProcessing(false);
       }
     }
@@ -499,7 +499,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     // For serialized products, use selected serials
     if (scannedProduct.isSerialized) {
       if (selectedSerialIds.length === 0) {
-        setFeedback({ type: 'error', msg: 'Vui lòng chọn serial để nhập lại' });
+        setFeedback({ type: 'error', msg: t('select_serial_to_import') });
         setIsProcessing(false);
         return;
       }
@@ -538,7 +538,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setIsProcessing(false);
       } catch (e: any) {
         console.error('Import error:', e);
-        setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+        setFeedback({ type: 'error', msg: e.message || t('import_error') });
         setIsProcessing(false);
       }
     } else {
@@ -568,7 +568,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
         setIsProcessing(false);
       } catch (e: any) {
         console.error('Import error:', e);
-        setFeedback({ type: 'error', msg: e.message || 'Lỗi nhập kho' });
+        setFeedback({ type: 'error', msg: e.message || t('import_error') });
         setIsProcessing(false);
       }
     }
@@ -620,7 +620,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       await Promise.all([db.refreshProducts(), db.refreshLogs()]);
       setFeedback({
         type: successCount > 0 ? 'success' : 'error',
-        msg: `Đã xuất ${successCount}/${scannedSet.items.length} sản phẩm${failCount > 0 ? ` (${failCount} lỗi)` : ''}`
+        msg: t('exported_count').replace('{0}', String(successCount)).replace('{1}', String(scannedSet.items.length)) + (failCount > 0 ? ` (${failCount} エラー)` : '')
       });
 
       setTimeout(() => {
@@ -649,7 +649,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               product.currentPhysicalStock + item.quantity,
               'IMPORT',
               item.quantity,
-              `Nhập theo bộ: ${scannedSet.name}`
+              `セット入庫: ${scannedSet.name}`
             );
             successCount++;
           } catch { }
@@ -660,7 +660,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
       await Promise.all([db.refreshProducts(), db.refreshLogs()]);
       setFeedback({
         type: 'success',
-        msg: `Đã nhập ${successCount}/${scannedSet.items.length} sản phẩm`
+        msg: t('imported_count').replace('{0}', String(successCount)).replace('{1}', String(scannedSet.items.length))
       });
 
       setTimeout(() => {
@@ -1321,13 +1321,13 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                   }}
                   onFocus={() => setShowCustomerSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
-                  placeholder="Nhập tên khách hàng..."
+                  placeholder={t('enter_customer_name')}
                   className={`w-full p-3 bg-slate-50 border-2 rounded-xl focus:bg-white outline-none transition-all text-sm ${customerError ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-blue-500'}`}
                 />
                 {customerError && (
                   <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Vui lòng nhập tên khách hàng
+                    {t('please_enter_customer')}
                   </p>
                 )}
                 {showCustomerSuggestions && customerSuggestions.length > 0 && (
@@ -1351,7 +1351,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
               {customerName && !customerSuggestions.some(c => c.name === customerName) && (
                 <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
                   <Plus className="w-3 h-3" />
-                  Sẽ tạo khách hàng mới
+                  {t('will_create_new_customer')}
                 </p>
               )}
             </div>
@@ -1445,55 +1445,36 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
     <div className="bg-slate-50 md:min-h-screen">
       {/* Fixed Top Section on Mobile */}
       <div className="md:relative">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white px-4 pt-4 pb-8 md:px-8">
+
+        <div className="px-4 py-2 md:pb-0 sticky top-[60px] z-10 bg-slate-50">
           <div className="max-w-lg mx-auto">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-white/10 rounded-xl">
-                <Scan className="w-6 h-6" />
-              </div>
-              <h1 className="text-xl font-bold">{t('scanner_title')}</h1>
-            </div>
-            <p className="text-slate-400 text-sm">{t('scan_or_search')}</p>
-          </div>
-        </div>
-
-        <div className="px-4 -mt-4 pb-4 md:pb-0">
-          <div className="max-w-lg mx-auto space-y-4">
-
-            {/* Continuous Scan Toggle */}
-            <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm mb-4">
-              <div className="flex items-center gap-3">
-                <QrCode className="w-5 h-5 text-indigo-500" />
-                <div>
-                  <p className="font-medium text-slate-800">Quét liên tục</p>
-                  <p className="text-xs text-slate-500">Thêm nhiều SP vào hàng chờ</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setContinuousMode(prev => !prev)}
-                className={`relative w-12 h-7 rounded-full transition-colors ${continuousMode ? 'bg-indigo-500' : 'bg-slate-200'
-                  }`}
-              >
-                <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${continuousMode ? 'translate-x-6' : 'translate-x-1'
-                  }`} />
-              </button>
-            </div>
 
             {/* Camera Button / Scanner */}
             {!showCamera ? (
-              <button
-                onClick={() => setShowCamera(true)}
-                className="w-full bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 hover:shadow-xl transition-all group"
-              >
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                  <Camera className="w-7 h-7 text-white" />
+              <div className="w-full bg-white p-4 rounded-2xl shadow-lg flex items-center gap-4">
+                <button
+                  onClick={() => setShowCamera(true)}
+                  className="flex items-center gap-4 flex-1 group"
+                >
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                    <Camera className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-slate-800">{t('open_camera')}</p>
+                    <p className="text-sm text-slate-500">{t('scan_qr_barcode')}</p>
+                  </div>
+                </button>
+                {/* Continuous Scan Toggle */}
+                <div
+                  onClick={() => setContinuousMode(prev => !prev)}
+                  className={`relative w-14 h-8 rounded-full transition-colors shrink-0 cursor-pointer ${continuousMode ? 'bg-indigo-500' : 'bg-slate-300'
+                    }`}
+                  title={t('continuous_scan')}
+                >
+                  <div className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-200 ${continuousMode ? 'translate-x-6' : 'translate-x-0'
+                    }`} />
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-800">{t('open_camera')}</p>
-                  <p className="text-sm text-slate-500">{t('scan_qr_barcode')}</p>
-                </div>
-              </button>
+              </div>
             ) : (
               <div className="bg-black rounded-2xl overflow-hidden shadow-xl relative">
                 <div id="reader" className="w-full"></div>
@@ -1507,7 +1488,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                 {continuousMode && (
                   <div className="absolute top-3 left-3 bg-indigo-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                    Quét liên tục
+                    {t('continuous_scan')}
                   </div>
                 )}
                 {/* Flashlight toggle */}
@@ -1526,7 +1507,7 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     }
                   }}
                   className={`absolute bottom-3 left-3 p-2 rounded-full transition-colors ${flashlightOn ? 'bg-yellow-400 text-black' : 'bg-white/20 text-white'}`}
-                  title="Bật/Tắt đèn flash"
+                  title={t('flash_toggle')}
                 >
                   <Zap className="w-5 h-5" />
                 </button>
@@ -1539,10 +1520,10 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                 <div className="p-4 border-b flex justify-between items-center">
                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
                     <Package className="w-5 h-5 text-indigo-500" />
-                    Hàng chờ ({scanQueue.length})
+                    {t('queue_label')} ({scanQueue.length})
                   </h3>
                   <button onClick={clearQueue} className="text-xs text-red-500 hover:underline">
-                    Xóa tất cả
+                    {t('clear_all')}
                   </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto divide-y">
@@ -1572,14 +1553,14 @@ export const Scanner: React.FC<ScannerProps> = ({ refreshApp, pendingScanCode, o
                     disabled={isProcessing}
                     className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-xl disabled:opacity-50"
                   >
-                    {isProcessing ? '...' : `Xuất kho (${scanQueue.reduce((s, i) => s + i.quantity, 0)})`}
+                    {isProcessing ? '...' : t('export_qty').replace('{0}', String(scanQueue.reduce((s, i) => s + i.quantity, 0)))}
                   </button>
                   <button
                     onClick={handleQueueImport}
                     disabled={isProcessing}
                     className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl disabled:opacity-50"
                   >
-                    {isProcessing ? '...' : `Nhập kho (${scanQueue.reduce((s, i) => s + i.quantity, 0)})`}
+                    {isProcessing ? '...' : t('import_qty').replace('{0}', String(scanQueue.reduce((s, i) => s + i.quantity, 0)))}
                   </button>
                 </div>
               </div>

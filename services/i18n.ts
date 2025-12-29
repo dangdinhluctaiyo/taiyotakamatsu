@@ -5,7 +5,7 @@ export type Language = 'vi' | 'ja';
 const translations = {
   vi: {
     // Common
-    app_name: 'TaiyoTakamatsu',
+    app_name: '高松大洋工芸',
     login: 'Đăng nhập',
     logout: 'Đăng xuất',
     save: 'Lưu',
@@ -49,6 +49,7 @@ const translations = {
     nav_scan: 'Quét QR',
     nav_home: 'Tổng quan',
     nav_history_short: 'Lịch sử',
+    nav_analytics: 'Thống kê',
 
     // Customer Management
     customer_management: 'Quản lý khách hàng',
@@ -550,11 +551,96 @@ const translations = {
     serial_export_count: 'Xuất {0} serial',
     serial_import_count: 'Nhập {0} serial',
     load_more: 'Tải thêm',
+
+    // Dashboard Stats
+    dashboard_overview: 'Tổng quan hoạt động kinh doanh',
+    on_rent_label: 'Đang thuê',
+    overdue_label: 'Quá hạn',
+    tb_on_rent: 'TB đang cho thuê',
+    revenue_this_month: 'Doanh thu tháng này',
+    inventory_status: 'Tình trạng kho',
+    total_products_label: 'Tổng sản phẩm',
+    total_assets_label: 'Tổng tài sản',
+    units_label: 'đơn vị',
+    running_low: 'Sắp hết',
+    out_of_stock_label: 'Hết hàng',
+    this_month_activity: 'Hoạt động tháng này',
+    orders_completed: 'Đơn hoàn thành',
+    warehouse_transactions: 'Giao dịch kho',
+    export_label: 'Xuất',
+    import_label: 'Nhập',
+    top_rental_products: 'Top sản phẩm cho thuê nhiều nhất',
+    times_rented: 'lần thuê',
+    no_data_yet: 'Chưa có dữ liệu',
+
+    // Scanner
+    continuous_scan: 'Quét liên tục',
+    add_many_to_queue: 'Thêm nhiều SP vào hàng chờ',
+
+    // Report Labels
+    report_title: 'Báo cáo dữ liệu',
+    exported_at: 'Xuất lúc',
+    products_list: 'Danh sách sản phẩm',
+    customers_list: 'Danh sách khách hàng',
+    recent_activities: 'Hoạt động gần đây',
+    recent_50: '50 mới nhất',
+    time_label: 'Thời gian',
+    type_label: 'Loại',
+    product_code_label: 'Mã SP',
+    product_name_label: 'Tên sản phẩm',
+    qty_label: 'SL',
+    staff_col: 'Nhân viên',
+    note_column: 'Ghi chú',
+    category_col: 'Danh mục',
+    total_qty: 'Tổng SL',
+    stock_col: 'Tồn kho',
+    location_col: 'Vị trí',
+    address_label: 'Địa chỉ',
+    clean_action: 'VS',
+
+    // Additional UI texts
+    products_low_stock: '{0} SP sắp hết',
+    enter_customer_name: 'Nhập tên khách hàng...',
+    location_format_hint: 'Format: Khu-Kệ-Tầng-Ô (VD: A-K01-T2-O3)',
+    specs_placeholder: 'Chất liệu: ...\nKích thước: ...',
+    serial_management: 'Quản lý theo Serial',
+    serial_management_desc: 'Theo dõi từng thiết bị riêng lẻ bằng số serial',
+
+    // Scanner messages
+    select_serial_to_export: 'Vui lòng chọn serial để xuất',
+    select_serial_to_import: 'Vui lòng chọn serial để nhập lại',
+    export_error: 'Lỗi xuất kho',
+    import_error: 'Lỗi nhập kho',
+    exported_count: 'Đã xuất {0}/{1} sản phẩm',
+    imported_count: 'Đã nhập {0}/{1} sản phẩm',
+    queue_label: 'Hàng chờ',
+    clear_all: 'Xóa tất cả',
+    export_qty: 'Xuất kho ({0})',
+    import_qty: 'Nhập kho ({0})',
+    flash_toggle: 'Bật/Tắt đèn flash',
+    please_enter_customer: 'Vui lòng nhập tên khách hàng',
+    will_create_new_customer: 'Sẽ tạo khách hàng mới',
+    default_category: 'Thiết bị',
+    other_category: 'Khác',
+    cleaning: 'Vệ sinh',
+    note_label: 'Ghi chú',
+
+    // AiChat
+    ai_assistant: 'Trợ lý AI',
+    ai_support_desc: 'Hỗ trợ xuất nhập kho',
+    ai_greeting: 'Xin chào! Tôi có thể giúp bạn:',
+    check_inventory: 'Kiểm tra tồn kho',
+    find_product: 'Tìm sản phẩm',
+    confirm_create_order: 'Xác nhận tạo đơn',
+    cancelled: 'Đã hủy.',
+    enter_message: 'Nhập tin nhắn...',
+    missing_info_error: 'Thiếu thông tin. Vui lòng thử lại với đầy đủ: tên khách, sản phẩm, ngày.',
+    general_error: 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.',
   },
 
   ja: {
     // Common
-    app_name: 'TaiyoTakamatsu',
+    app_name: '高松大洋工芸',
     login: 'ログイン',
     logout: 'ログアウト',
     save: '保存',
@@ -598,6 +684,7 @@ const translations = {
     nav_scan: 'スキャン',
     nav_home: 'ホーム',
     nav_history_short: '履歴',
+    nav_analytics: '統計',
 
     // Customer Management
     customer_management: '顧客管理',
@@ -1099,19 +1186,98 @@ const translations = {
     serial_export_count: '{0}台を出庫',
     serial_import_count: '{0}台を入庫',
     load_more: 'もっと見る',
+
+    // Dashboard Stats
+    dashboard_overview: 'ビジネス活動の概要',
+    on_rent_label: 'レンタル中',
+    overdue_label: '延滞',
+    tb_on_rent: 'レンタル中機材',
+    revenue_this_month: '今月の売上',
+    inventory_status: '在庫状況',
+    total_products_label: '総商品数',
+    total_assets_label: '総資産',
+    units_label: '台',
+    running_low: '在庫少',
+    out_of_stock_label: '在庫切れ',
+    this_month_activity: '今月の活動',
+    orders_completed: '完了した注文',
+    warehouse_transactions: '倉庫取引',
+    export_label: '出庫',
+    import_label: '入庫',
+    top_rental_products: 'レンタル回数トップ商品',
+    times_rented: '回レンタル',
+    no_data_yet: 'データなし',
+
+    // Scanner
+    continuous_scan: '連続スキャン',
+    add_many_to_queue: '複数商品をキューに追加',
+
+    // Report Labels
+    report_title: 'データレポート',
+    exported_at: '出力日時',
+    products_list: '商品一覧',
+    customers_list: '顧客一覧',
+    recent_activities: '最近の活動',
+    recent_50: '最新50件',
+    time_label: '日時',
+    type_label: '種類',
+    product_code_label: '商品コード',
+    product_name_label: '商品名',
+    qty_label: '数量',
+    staff_col: 'スタッフ',
+    note_column: 'メモ',
+    category_col: 'カテゴリ',
+    total_qty: '総数',
+    stock_col: '在庫',
+    location_col: '場所',
+    address_label: '住所',
+    clean_action: '清掃',
+
+    // Additional UI texts
+    products_low_stock: '{0}点が在庫少',
+    enter_customer_name: '顧客名を入力...',
+    location_format_hint: 'フォーマット: エリア-棚-段-位置 (例: A-K01-T2-O3)',
+    specs_placeholder: '素材: ...\nサイズ: ...',
+    serial_management: 'シリアル管理',
+    serial_management_desc: 'シリアル番号で各機器を個別追跡',
+
+    // Scanner messages
+    select_serial_to_export: '出庫するシリアルを選択してください',
+    select_serial_to_import: '入庫するシリアルを選択してください',
+    export_error: '出庫エラー',
+    import_error: '入庫エラー',
+    exported_count: '{0}/{1}点を出庫しました',
+    imported_count: '{0}/{1}点を入庫しました',
+    queue_label: 'キュー',
+    clear_all: 'すべてクリア',
+    export_qty: '出庫 ({0})',
+    import_qty: '入庫 ({0})',
+    flash_toggle: 'フラッシュ切替',
+    please_enter_customer: '顧客名を入力してください',
+    will_create_new_customer: '新規顧客として登録します',
+    default_category: '機材',
+    other_category: 'その他',
+    cleaning: '清掃',
+    note_label: 'メモ',
+
+    // AiChat
+    ai_assistant: 'AIアシスタント',
+    ai_support_desc: '入出庫サポート',
+    ai_greeting: 'こんにちは！以下のサポートができます:',
+    check_inventory: '在庫確認',
+    find_product: '商品検索',
+    confirm_create_order: '注文作成を確認',
+    cancelled: 'キャンセルしました。',
+    enter_message: 'メッセージを入力...',
+    missing_info_error: '情報が不足しています。顧客名、商品、日付を入力してください。',
+    general_error: 'エラーが発生しました。もう一度お試しください。',
   }
 };
 
 const STORAGE_KEY = 'lucrental_language';
 
-// Detect device language
-function detectDeviceLanguage(): Language {
-  if (typeof window !== 'undefined' && navigator.language) {
-    const browserLang = navigator.language.toLowerCase();
-    if (browserLang.startsWith('vi')) return 'vi';
-    if (browserLang.startsWith('ja')) return 'ja';
-  }
-  // Default to Japanese if device language not supported
+// Default language is Japanese
+function getDefaultLanguage(): Language {
   return 'ja';
 }
 
@@ -1120,10 +1286,10 @@ export function getLanguage(): Language {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'vi' || saved === 'ja') return saved;
 
-    // Auto-detect on first visit
-    const detected = detectDeviceLanguage();
-    localStorage.setItem(STORAGE_KEY, detected);
-    return detected;
+    // Default to Japanese for first visit
+    const defaultLang = getDefaultLanguage();
+    localStorage.setItem(STORAGE_KEY, defaultLang);
+    return defaultLang;
   }
   return 'ja';
 }

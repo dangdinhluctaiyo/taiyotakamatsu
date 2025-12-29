@@ -48,9 +48,9 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img 
-            src="https://shikoku-taiyo-g.com/img/logo_header.png" 
-            alt="TaiyoTakamatsu" 
+          <img
+            src="/icons/icon.png"
+            alt="TaiyoTakamatsu"
             className="w-20 h-20 mx-auto rounded-2xl object-contain bg-white p-2 shadow-lg mb-4"
           />
           <h1 className="text-3xl font-bold text-white">{t('app_name')}</h1>

@@ -223,25 +223,11 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 md:block md:h-auto md:min-h-screen">
-            {/* Fixed Header - Compact */}
-            <div className="flex-shrink-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 pt-4 pb-16">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold">{t('warehouse_dashboard') || 'Quản lý Kho'}</h1>
-                        <p className="text-indigo-200 text-xs mt-0.5">{t('warehouse_tasks_desc') || 'Xuất nhập & vệ sinh thiết bị'}</p>
-                    </div>
-                    <button
-                        onClick={loadTasks}
-                        className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"
-                    >
-                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
-            </div>
+
 
             {/* Alerts Banner */}
             {showAlerts && totalAlerts > 0 && (
-                <div className="mx-4 -mt-8 mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 relative z-10 shadow-sm">
+                <div className="mx-4 mt-4 mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 relative z-10 shadow-sm">
                     <button
                         onClick={() => setShowAlerts(false)}
                         className="absolute top-2 right-2 p-1 text-amber-600 hover:text-amber-800"
@@ -263,7 +249,7 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                             )}
                             {alerts.lowStock.length > 0 && (
                                 <p className="text-amber-700">
-                                    📦 <b>{alerts.lowStock.length}</b> SP sắp hết
+                                    📦 {t('products_low_stock').replace('{0}', String(alerts.lowStock.length))}
                                 </p>
                             )}
                         </div>
@@ -272,8 +258,8 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
             )}
 
             {/* Fixed Tabs and Content */}
-            <div className="flex-1 flex flex-col -mt-10 overflow-hidden md:overflow-visible">
-                <div className="px-4 flex-shrink-0">
+            <div className="flex-1 flex flex-col mt-4 overflow-hidden md:overflow-visible">
+                <div className="px-4 py-2 flex-shrink-0 sticky top-0 z-20 bg-gray-50">
                     <div className="max-w-2xl mx-auto">
                         {/* Tabs - Modern Segmented Control */}
                         <div className="bg-white rounded-2xl shadow-lg p-1.5 flex gap-1">

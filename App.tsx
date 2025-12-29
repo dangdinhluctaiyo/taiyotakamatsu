@@ -108,8 +108,8 @@ function AppContent() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
           <img
-            src="https://shikoku-taiyo-g.com/img/logo_header.png"
-            alt="TaiyoTakamatsu"
+            src="/icons/icon.png"
+            alt="高松大洋工芸"
             className="w-14 h-14 mx-auto rounded-xl object-contain bg-white p-2 mb-4 shadow-sm border border-stone-200 animate-pulse"
           />
           <p className="text-stone-500 font-medium text-sm">{t('loading')}</p>
@@ -157,45 +157,50 @@ function AppContent() {
         <div className="p-5 border-b border-[#E5E5EA]">
           <div className="flex items-center gap-3">
             <img
-              src="https://shikoku-taiyo-g.com/img/logo_header.png"
-              alt="TaiyoTakamatsu"
+              src="/icons/icon.png"
+              alt="高松大洋工芸"
               className="w-9 h-9 rounded-lg object-contain bg-white p-1 shadow-sm border border-stone-200"
             />
             <div>
-              <h1 className="text-base font-semibold text-stone-800 leading-tight">TaiyoTakamatsu</h1>
+              <h1 className="text-base font-semibold text-stone-800 leading-tight">高松大洋工芸</h1>
               <span className="text-[10px] font-medium text-stone-500 uppercase tracking-wider">Rental System</span>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <nav className="space-y-0.5">
-            <NavButton active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} count={db.orders.filter(o => o.status === 'ACTIVE').length} />
-            <NavButton active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
-            <NavButton active={view === 'WAREHOUSE' || view === 'SCANNER'} onClick={() => setView('WAREHOUSE')} icon={<Warehouse />} label={t('warehouse_dashboard') || 'Kho'} isSpecial />
-          </nav>
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          {/* Main Section */}
+          <div className="mb-4">
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider px-3 mb-2">メイン</p>
+            <nav className="space-y-0.5">
+              <NavButton active={view === 'ORDERS'} onClick={() => setView('ORDERS')} icon={<ShoppingCart />} label={t('nav_orders')} count={db.orders.filter(o => o.status === 'ACTIVE').length} />
+              <NavButton active={view === 'INVENTORY'} onClick={() => setView('INVENTORY')} icon={<Box />} label={t('nav_inventory')} />
+              <NavButton active={view === 'WAREHOUSE' || view === 'SCANNER'} onClick={() => setView('WAREHOUSE')} icon={<Warehouse />} label={t('warehouse_dashboard') || '倉庫'} isSpecial />
+            </nav>
+          </div>
 
-          {/* Admin Menu */}
+          {/* Tools Section */}
           {db.currentUser?.role === 'admin' && (
-            <div className="mt-6">
-              <button
-                onClick={() => setShowAdminMenu(!showAdminMenu)}
-                className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider hover:text-stone-600 transition-colors"
-              >
-                <span>Admin</span>
-                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAdminMenu ? 'rotate-90' : ''}`} />
-              </button>
-              {showAdminMenu && (
-                <nav className="space-y-0.5 mt-1">
-                  <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers') || 'Khách hàng'} />
-                  <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories') || 'Danh mục'} />
-                  <NavButton active={view === 'QR_GENERATOR'} onClick={() => setView('QR_GENERATOR')} icon={<QrCode />} label={t('nav_qr_generator') || 'Tạo QR'} />
-                  <NavButton active={view === 'EQUIPMENT_SETS'} onClick={() => setView('EQUIPMENT_SETS')} icon={<Package />} label={t('nav_equipment_sets')} />
-                  <NavButton active={view === 'ANALYTICS'} onClick={() => setView('ANALYTICS')} icon={<TrendingUp />} label={'Thống kê'} />
-                  <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
-                </nav>
-              )}
+            <div className="mb-4">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider px-3 mb-2">ツール</p>
+              <nav className="space-y-0.5">
+                <NavButton active={view === 'QR_GENERATOR'} onClick={() => setView('QR_GENERATOR')} icon={<QrCode />} label={t('nav_qr_generator')} />
+                <NavButton active={view === 'EQUIPMENT_SETS'} onClick={() => setView('EQUIPMENT_SETS')} icon={<Package />} label={t('nav_equipment_sets')} />
+                <NavButton active={view === 'ANALYTICS'} onClick={() => setView('ANALYTICS')} icon={<TrendingUp />} label={t('nav_analytics')} />
+              </nav>
+            </div>
+          )}
+
+          {/* Management Section */}
+          {db.currentUser?.role === 'admin' && (
+            <div className="mb-4">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider px-3 mb-2">管理</p>
+              <nav className="space-y-0.5">
+                <NavButton active={view === 'CUSTOMERS'} onClick={() => setView('CUSTOMERS')} icon={<UserCircle />} label={t('nav_customers')} />
+                <NavButton active={view === 'CATEGORIES'} onClick={() => setView('CATEGORIES')} icon={<FolderOpen />} label={t('nav_categories')} />
+                <NavButton active={view === 'STAFF'} onClick={() => setView('STAFF')} icon={<Users />} label={t('nav_staff')} />
+              </nav>
             </div>
           )}
         </div>
@@ -273,12 +278,12 @@ function AppContent() {
         <div className="md:hidden p-4 ios-glass sticky top-0 z-30 border-b border-[#E5E5EA]/50 flex justify-between items-center pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <img
-              src="https://shikoku-taiyo-g.com/img/logo_header.png"
-              alt="TaiyoTakamatsu"
+              src="/icons/icon.png"
+              alt="高松大洋工芸"
               className="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-lg border"
             />
             <div>
-              <h1 className="font-bold text-slate-800 text-sm leading-tight">TaiyoTakamatsu</h1>
+              <h1 className="font-bold text-slate-800 text-sm leading-tight">高松大洋工芸</h1>
               <p className="text-[10px] text-slate-500 font-medium">{db.currentUser?.name}</p>
             </div>
           </div>

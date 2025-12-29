@@ -128,7 +128,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const handleAddNew = () => {
     if (!isAdmin) { error(t('only_admin_can_add')); return; }
     setEditingProduct(null);
-    setFormData({ name: '', code: '', category: 'Thiết bị', pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '', isSerialized: false });
+    setFormData({ name: '', code: '', category: t('default_category'), pricePerDay: 0, totalOwned: 1, imageUrl: '', images: [], location: '', specs: '', isSerialized: false });
     setIsModalOpen(true);
   };
 
@@ -147,7 +147,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       id: editingProduct ? editingProduct.id : 0,
       code: formData.code!,
       name: formData.name!,
-      category: formData.category || 'Khác',
+      category: formData.category || t('other_category'),
       pricePerDay: Number(formData.pricePerDay),
       totalOwned: Number(formData.totalOwned),
       currentPhysicalStock: editingProduct ? editingProduct.currentPhysicalStock : Number(formData.totalOwned),
@@ -193,7 +193,7 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   };
 
   const openHistory = (product: Product) => { setViewHistoryFor(product); setIsHistoryOpen(true); };
-  const getProductLogs = (productId: number) => db.logs.filter(l => l.productId === productId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const getProductLogs = (productId: number) => db.logs.filter(l => l.productId === productId && l.actionType !== 'CLEAN').sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   const getUpcomingRentals = (productId: number) => {
     const today = new Date().toISOString().split('T')[0];
     return db.orders.filter(o => o.items.some(i => i.productId === productId) && (o.status === 'BOOKED' || o.status === 'ACTIVE') && o.expectedReturnDate >= today)
@@ -212,18 +212,18 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white px-4 pt-4 pb-20 md:px-8 md:pt-8 md:pb-24">
+      {/* Header - Simple */}
+      <div className="px-4 pt-4 pb-4 md:px-8 md:pt-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">{t('products_title')}</h1>
-              <p className="text-indigo-200 text-sm mt-1">{t('inventory_desc')}</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{t('products_title')}</h1>
+              <p className="text-slate-500 text-sm mt-1">{t('inventory_desc')}</p>
             </div>
             {isAdmin && (
               <button
                 onClick={handleAddNew}
-                className="bg-white text-indigo-600 px-5 py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" /> {t('add_equipment_btn')}
               </button>
@@ -233,11 +233,11 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       </div>
 
       {/* Main Content */}
-      <div className="px-4 md:px-8 -mt-14 md:-mt-16 pb-24 md:pb-8">
+      <div className="px-4 md:px-8 pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto space-y-4">
 
           {/* Search & Filter */}
-          <div className="bg-white rounded-2xl shadow-sm border p-4">
+          <div className="bg-white rounded-2xl shadow-sm border p-4 sticky top-0 z-20">
             <div className="flex flex-col md:flex-row gap-3">
               {/* Search */}
               <div className="relative flex-1">
@@ -643,18 +643,18 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><MapPin className="w-3 h-3 inline" /> {t('location')}</label>
                 <input type="text" className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value.toUpperCase() })} placeholder="A-K01-T2-O3" />
-                <p className="text-[10px] text-slate-400 mt-1">Format: Khu-Kệ-Tầng-Ô (VD: A-K01-T2-O3)</p>
+                <p className="text-[10px] text-slate-400 mt-1">{t('location_format_hint')}</p>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><FileText className="w-3 h-3 inline" /> {t('specs')}</label>
-                <textarea className="w-full border p-2.5 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/20" rows={3} value={formData.specs} onChange={e => setFormData({ ...formData, specs: e.target.value })} placeholder="Chất liệu: ...&#10;Kích thước: ..." />
+                <textarea className="w-full border p-2.5 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500/20" rows={3} value={formData.specs} onChange={e => setFormData({ ...formData, specs: e.target.value })} placeholder={t('specs_placeholder')} />
               </div>
 
               {/* Serial Tracking Toggle */}
               <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl">
                 <div>
-                  <p className="font-medium text-slate-800">Quản lý theo Serial</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Theo dõi từng thiết bị riêng lẻ bằng số serial</p>
+                  <p className="font-medium text-slate-800">{t('serial_management')}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('serial_management_desc')}</p>
                 </div>
                 <button
                   type="button"
@@ -868,67 +868,80 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
         />
       )}
 
-      {/* LOG DETAIL MODAL */}
-      {selectedLog && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4" onClick={() => setSelectedLog(null)}>
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className={`p-4 text-white ${selectedLog.actionType === 'EXPORT' ? 'bg-orange-500' : selectedLog.actionType === 'IMPORT' ? 'bg-green-500' : 'bg-blue-500'}`}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg">
-                    {selectedLog.actionType === 'EXPORT' ? '📤 Xuất kho' : selectedLog.actionType === 'IMPORT' ? '📥 Nhập kho' : '🧹 Vệ sinh'}
-                  </h3>
-                  <p className="text-white/80 text-sm mt-1">
-                    {new Date(selectedLog.timestamp).toLocaleString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}
-                  </p>
+      {/* LOG DETAIL MODAL - Clean Design */}
+      {selectedLog && (() => {
+        const product = db.products.find(p => p.id === selectedLog.productId);
+        // Extract customer name from note (format: "CustomerName - optional note")
+        const noteParts = selectedLog.note?.split(' - ') || [];
+        const customerName = noteParts.length > 0 ? noteParts[0] : null;
+        const noteText = noteParts.length > 1 ? noteParts.slice(1).join(' - ') : selectedLog.note;
+
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4" onClick={() => setSelectedLog(null)}>
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Header - Action Type */}
+              <div className={`p-4 text-white flex items-center justify-between ${selectedLog.actionType === 'EXPORT' ? 'bg-gradient-to-r from-orange-500 to-red-500' : selectedLog.actionType === 'IMPORT' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    {selectedLog.actionType === 'EXPORT' ? <ArrowUpRight className="w-5 h-5" /> : selectedLog.actionType === 'IMPORT' ? <ArrowDownLeft className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">
+                      {selectedLog.actionType === 'EXPORT' ? t('export_stock') : selectedLog.actionType === 'IMPORT' ? t('import_stock') : t('cleaning')}
+                    </h3>
+                    <p className="text-white/80 text-xs">
+                      {new Date(selectedLog.timestamp).toLocaleString(i18n.getLanguage() === 'vi' ? 'vi-VN' : 'ja-JP')}
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setSelectedLog(null)} className="p-1 hover:bg-white/20 rounded-lg">
+                <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Số lượng</span>
-                <span className="text-2xl font-bold text-slate-800">×{selectedLog.quantity}</span>
-              </div>
-              {selectedLog.staffName && (
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-500 flex items-center gap-2">
-                    <Box className="w-4 h-4" /> Nhân viên
-                  </span>
-                  <span className="font-medium text-slate-700">{selectedLog.staffName}</span>
-                </div>
-              )}
-              {selectedLog.orderId && selectedLog.orderId > 0 && (
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-500 flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Đơn hàng #
-                  </span>
-                  <span className="font-medium text-slate-700">{selectedLog.orderId}</span>
-                </div>
-              )}
-              {selectedLog.note && (
-                <div className="p-3 bg-amber-50 rounded-xl">
-                  <p className="text-sm text-amber-800">💬 {selectedLog.note}</p>
-                </div>
-              )}
-              {(() => {
-                const product = db.products.find(p => p.id === selectedLog.productId);
-                return product ? (
+
+              <div className="p-4 space-y-3">
+                {/* Product Info - Top */}
+                {product && (
                   <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                    {product.imageUrl && <img src={product.imageUrl} className="w-12 h-12 object-cover rounded-lg" />}
-                    <div>
-                      <p className="font-medium text-slate-800">{product.name}</p>
-                      <p className="text-xs text-slate-500">{product.code}</p>
+                    {product.imageUrl && <img src={product.imageUrl} className="w-12 h-12 object-cover rounded-xl bg-white shadow-sm" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 truncate">{product.name}</p>
+                      <p className="text-xs text-slate-400 font-mono">{product.code}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-800">×{selectedLog.quantity}</p>
                     </div>
                   </div>
-                ) : null;
-              })()}
+                )}
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedLog.staffName && (
+                    <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold mb-0.5">{t('staff_label') || 'Nhân viên'}</p>
+                      <p className="text-sm font-medium text-slate-700 truncate">{selectedLog.staffName}</p>
+                    </div>
+                  )}
+                  {customerName && (
+                    <div className="p-3 bg-amber-50 rounded-xl">
+                      <p className="text-[10px] text-amber-600 uppercase font-bold mb-0.5">{t('customer_name') || 'Khách hàng'}</p>
+                      <p className="text-sm font-medium text-amber-800 truncate">{customerName}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Note */}
+                {noteText && noteText !== customerName && (
+                  <div className="p-3 bg-slate-50 rounded-xl">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold mb-0.5">{t('note_label')}</p>
+                    <p className="text-sm text-slate-600">{noteText}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
