@@ -222,61 +222,50 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
     ];
 
     return (
-        <div className="h-screen flex flex-col bg-gray-50 md:block md:h-auto md:min-h-screen">
+        <div className="min-h-screen bg-slate-50">
+            {/* Main Content */}
+            <div className="px-3 md:px-8 pb-24 md:pb-8">
+                <div className="max-w-2xl mx-auto space-y-3 md:space-y-4">
 
+                    {/* Sticky Action Bar - Similar to ProductManager */}
+                    <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border p-3 md:p-4 sticky top-[70px] md:top-0 z-20">
+                        {/* Alerts - Compact inline on same row (if any) */}
+                        {showAlerts && totalAlerts > 0 && (
+                            <div className="flex items-center gap-2 mb-3 pb-3 border-b text-xs md:text-sm">
+                                <Bell className="w-4 h-4 text-amber-500 shrink-0" />
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 flex-1">
+                                    {alerts.overdueOrders.length > 0 && (
+                                        <span className="text-red-600">⚠️ <b>{alerts.overdueOrders.length}</b> quá hạn</span>
+                                    )}
+                                    {alerts.outOfStock.length > 0 && (
+                                        <span className="text-red-500">🚫 <b>{alerts.outOfStock.length}</b> hết</span>
+                                    )}
+                                    {alerts.lowStock.length > 0 && (
+                                        <span className="text-amber-600">📦 <b>{alerts.lowStock.length}</b> sắp hết</span>
+                                    )}
+                                </div>
+                                <button onClick={() => setShowAlerts(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
 
-            {/* Alerts Banner */}
-            {showAlerts && totalAlerts > 0 && (
-                <div className="mx-4 mt-4 mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 relative z-10 shadow-sm">
-                    <button
-                        onClick={() => setShowAlerts(false)}
-                        className="absolute top-2 right-2 p-1 text-amber-600 hover:text-amber-800"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    <div className="flex items-start gap-3">
-                        <Bell className="w-5 h-5 text-amber-600 mt-0.5" />
-                        <div className="text-sm space-y-1">
-                            {alerts.overdueOrders.length > 0 && (
-                                <p className="text-red-700">
-                                    ⚠️ <b>{alerts.overdueOrders.length}</b> đơn quá hạn
-                                </p>
-                            )}
-                            {alerts.outOfStock.length > 0 && (
-                                <p className="text-red-600">
-                                    🚫 <b>{alerts.outOfStock.length}</b> SP hết hàng
-                                </p>
-                            )}
-                            {alerts.lowStock.length > 0 && (
-                                <p className="text-amber-700">
-                                    📦 {t('products_low_stock').replace('{0}', String(alerts.lowStock.length))}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Fixed Tabs and Content */}
-            <div className="flex-1 flex flex-col mt-4 overflow-hidden md:overflow-visible">
-                <div className="px-4 py-2 flex-shrink-0 sticky top-0 z-20 bg-gray-50">
-                    <div className="max-w-2xl mx-auto">
-                        {/* Tabs - Modern Segmented Control */}
-                        <div className="bg-white rounded-2xl shadow-lg p-1.5 flex gap-1">
+                        {/* Tabs Row */}
+                        <div className="flex gap-1.5 md:gap-2">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key as any)}
-                                    className={`flex-1 py-3 px-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === tab.key
-                                        ? 'bg-indigo-600 text-white shadow-md'
-                                        : 'text-gray-500 hover:bg-gray-100'
+                                    className={`flex-1 py-2 md:py-2.5 px-2 md:px-3 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${activeTab === tab.key
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border'
                                         }`}
                                 >
-                                    <tab.icon className="w-5 h-5" />
+                                    <tab.icon className="w-4 h-4" />
                                     <span className="hidden sm:inline">{tab.label}</span>
                                     {tab.count > 0 && (
-                                        <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${activeTab === tab.key
-                                            ? 'bg-white text-indigo-600'
+                                        <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${activeTab === tab.key
+                                            ? 'bg-white/20 text-white'
                                             : 'bg-red-500 text-white'
                                             }`}>
                                             {tab.count}
@@ -286,11 +275,9 @@ export const WarehouseDashboard: React.FC<Props> = ({ refreshApp }) => {
                             ))}
                         </div>
                     </div>
-                </div>
 
-                {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-28 md:pb-8">
-                    <div className="max-w-2xl mx-auto space-y-4">
+                    {/* Content Area */}
+                    <div className="space-y-4">
 
                         {/* Scanner Tab */}
                         {activeTab === 'scanner' && (

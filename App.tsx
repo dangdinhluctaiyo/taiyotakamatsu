@@ -34,7 +34,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE' | 'EQUIPMENT_SETS' | 'ANALYTICS'>('WAREHOUSE');
+  const [view, setView] = useState<'DASHBOARD' | 'ORDERS' | 'INVENTORY' | 'STAFF' | 'FORECAST' | 'CUSTOMERS' | 'SCANNER' | 'HISTORY' | 'CATEGORIES' | 'QR_GENERATOR' | 'WAREHOUSE' | 'EQUIPMENT_SETS' | 'ANALYTICS'>('INVENTORY');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -251,19 +251,19 @@ function AppContent() {
         </button>
 
         <button
-          onClick={() => setView('WAREHOUSE')}
-          className={`ios-tab-item ${view === 'WAREHOUSE' || view === 'SCANNER' ? 'active' : ''}`}
-        >
-          <Warehouse className="ios-tab-icon" />
-          <span className="ios-tab-label">{t('nav_warehouse_short')}</span>
-        </button>
-
-        <button
           onClick={() => setView('INVENTORY')}
           className={`ios-tab-item ${view === 'INVENTORY' ? 'active' : ''}`}
         >
           <Box className="ios-tab-icon" />
           <span className="ios-tab-label">{t('nav_equipment_short')}</span>
+        </button>
+
+        <button
+          onClick={() => setView('WAREHOUSE')}
+          className={`ios-tab-item ${view === 'WAREHOUSE' || view === 'SCANNER' ? 'active' : ''}`}
+        >
+          <Warehouse className="ios-tab-icon" />
+          <span className="ios-tab-label">{t('nav_warehouse_short')}</span>
         </button>
       </div>
 

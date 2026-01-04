@@ -3,7 +3,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { t, i18n } from '../services/i18n';
 import { Product } from '../types';
-import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, QrCode, X, Save, Image as ImageIcon, History, Search, ArrowUpRight, ArrowDownLeft, LayoutGrid, List as ListIcon, Box, Calendar, Package, Truck, MapPin, FileText, ChevronLeft, ChevronRight, Upload, Link, Tag, RefreshCw, Loader2, Camera, Scan } from 'lucide-react';
 import { useToast } from './Toast';
 import { SerialManager } from './SerialManager';
 import { SkeletonProductGrid } from './Skeleton';
@@ -11,6 +11,8 @@ import { usePullToRefresh, PullIndicator } from '../hooks/usePullToRefresh';
 import { useDebounce } from '../hooks/useDebounce';
 import { LazyImage } from './LazyImage';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+
+declare const Html5Qrcode: any;
 
 export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshApp }) => {
   const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('GRID');
@@ -29,6 +31,10 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
   const [serialCounts, setSerialCounts] = useState<{ total: number, available: number, on_rent: number, dirty: number, broken: number }>({ total: 0, available: 0, on_rent: 0, dirty: 0, broken: 0 });
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(db.products.length === 0);
+
+  // QR Scanner states
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const qrScannerRef = useRef<any>(null);
 
   // Debounce search term for performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -94,6 +100,87 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       });
     }
   }, [viewDetailFor?.id]);
+
+  // QR Scanner effect - initialize camera when showQRScanner changes
+  useEffect(() => {
+    let isMounted = true;
+
+    if (showQRScanner) {
+      setTimeout(async () => {
+        try {
+          if (!isMounted) return;
+
+          const html5Qrcode = new Html5Qrcode("qr-reader-products");
+          qrScannerRef.current = html5Qrcode;
+
+          await html5Qrcode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText: string) => {
+              // On successful scan, search for product
+              setShowQRScanner(false);
+
+              // Extract code from URL if it's a URL-based QR
+              let searchCode = decodedText;
+              if (decodedText.includes('/scan?code=')) {
+                try {
+                  const url = new URL(decodedText);
+                  searchCode = url.searchParams.get('code') || decodedText;
+                } catch { }
+              }
+
+              // Find product by code
+              const product = db.products.find(p =>
+                p.code.toLowerCase() === searchCode.toLowerCase() ||
+                p.code.toLowerCase().includes(searchCode.toLowerCase())
+              );
+
+              if (product) {
+                // Open product detail
+                setViewDetailFor(product);
+                setCurrentImageIndex(0);
+                success(t('product_found') || 'Đã tìm thấy sản phẩm');
+              } else {
+                // Set search term to allow manual search
+                setSearchTerm(searchCode);
+                error(t('product_not_found') || 'Không tìm thấy sản phẩm với mã này');
+              }
+            },
+            () => { } // Ignore scan errors
+          );
+        } catch (err) {
+          console.error("Failed to start camera:", err);
+          if (isMounted) {
+            error(t('camera_error') || 'Không thể khởi động camera');
+            setShowQRScanner(false);
+          }
+        }
+      }, 100);
+    } else {
+      // Cleanup camera when closing
+      const stopCamera = async () => {
+        if (qrScannerRef.current) {
+          try {
+            const scanner = qrScannerRef.current;
+            qrScannerRef.current = null;
+            await scanner.stop();
+          } catch (err) {
+            console.log('Camera already stopped:', err);
+          }
+        }
+      };
+      stopCamera();
+    }
+
+    return () => {
+      isMounted = false;
+      // Cleanup on unmount
+      if (qrScannerRef.current) {
+        qrScannerRef.current.stop().catch(() => { });
+        qrScannerRef.current = null;
+      }
+    };
+  }, [showQRScanner]);
 
   const filteredProducts = useMemo(() => {
     return db.products.filter(p => {
@@ -212,18 +299,18 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header - Simple */}
-      <div className="px-4 pt-4 pb-4 md:px-8 md:pt-6">
+      {/* Header - Hidden on mobile (shown in app header), visible on desktop */}
+      <div className="hidden md:block px-8 pt-6 pb-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{t('products_title')}</h1>
+              <h1 className="text-3xl font-bold text-slate-800">{t('products_title')}</h1>
               <p className="text-slate-500 text-sm mt-1">{t('inventory_desc')}</p>
             </div>
             {isAdmin && (
               <button
                 onClick={handleAddNew}
-                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" /> {t('add_equipment_btn')}
               </button>
@@ -233,13 +320,14 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
       </div>
 
       {/* Main Content */}
-      <div className="px-4 md:px-8 pb-24 md:pb-8">
-        <div className="max-w-7xl mx-auto space-y-4">
+      <div className="px-3 md:px-8 pb-24 md:pb-8">
+        <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
 
-          {/* Search & Filter */}
-          <div className="bg-white rounded-2xl shadow-sm border p-4 sticky top-0 z-20">
-            <div className="flex flex-col md:flex-row gap-3">
-              {/* Search */}
+          {/* Compact Search & Filter for Mobile */}
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border p-3 md:p-4 sticky top-[70px] md:top-0 z-20">
+            {/* Row 1: Search + QR + Add (mobile) */}
+            <div className="flex gap-2">
+              {/* Search Input */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -247,15 +335,36 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
                   placeholder={t('search_equipment')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  className="w-full pl-9 pr-3 py-2 md:py-2.5 bg-slate-50 border rounded-lg md:rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                 />
               </div>
 
-              {/* Category Filter */}
+              {/* QR Scan Button - compact on mobile */}
+              <button
+                onClick={() => setShowQRScanner(true)}
+                className="p-2 md:px-4 md:py-2.5 bg-indigo-500 text-white rounded-lg md:rounded-xl font-medium hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shrink-0"
+                title={t('scan_qr') || 'Quét QR'}
+              >
+                <Scan className="w-5 h-5" />
+                <span className="hidden md:inline">{t('scan') || 'Quét'}</span>
+              </button>
+
+              {/* Add Button - Mobile only, compact */}
+              {isAdmin && (
+                <button
+                  onClick={handleAddNew}
+                  className="md:hidden p-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-all flex items-center justify-center shrink-0"
+                  title={t('add_equipment_btn')}
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Category Filter - Desktop */}
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer"
+                className="hidden md:block px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer"
               >
                 <option value="ALL">{t('all_categories')}</option>
                 {categories.map(cat => (
@@ -280,12 +389,27 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
               </div>
             </div>
 
-            {/* Stock Filter Pills */}
-            <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-              <FilterPill active={stockFilter === 'all'} onClick={() => setStockFilter('all')} label={t('filter_all')} count={db.products.length} />
-              <FilterPill active={stockFilter === 'available'} onClick={() => setStockFilter('available')} label={t('filter_available')} color="green" />
-              <FilterPill active={stockFilter === 'low'} onClick={() => setStockFilter('low')} label={t('filter_low')} color="orange" />
-              <FilterPill active={stockFilter === 'out'} onClick={() => setStockFilter('out')} label={t('filter_out')} color="red" />
+            {/* Row 2: Category dropdown (mobile only) + Stock Filters */}
+            <div className="flex gap-2 mt-2 md:mt-3 items-center">
+              {/* Category Filter - Mobile only */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="md:hidden px-2 py-1.5 bg-slate-50 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer shrink-0 max-w-[100px]"
+              >
+                <option value="ALL">{t('all_categories')}</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {/* Stock Filter Pills - Scrollable */}
+              <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-0.5 flex-1">
+                <FilterPill active={stockFilter === 'all'} onClick={() => setStockFilter('all')} label={t('filter_all')} count={db.products.length} />
+                <FilterPill active={stockFilter === 'available'} onClick={() => setStockFilter('available')} label={t('filter_available')} color="green" />
+                <FilterPill active={stockFilter === 'low'} onClick={() => setStockFilter('low')} label={t('filter_low')} color="orange" />
+                <FilterPill active={stockFilter === 'out'} onClick={() => setStockFilter('out')} label={t('filter_out')} color="red" />
+              </div>
             </div>
           </div>
 
@@ -942,6 +1066,49 @@ export const ProductManager: React.FC<{ refreshApp: () => void }> = ({ refreshAp
           </div>
         );
       })()}
+
+      {/* QR SCANNER MODAL */}
+      {showQRScanner && (
+        <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50 backdrop-blur-sm">
+          {/* Close Button */}
+          <button
+            onClick={() => setShowQRScanner(false)}
+            className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Scan className="w-8 h-8 text-indigo-400" />
+            </div>
+            <h3 className="text-white font-bold text-xl">{t('scan_product_qr') || 'Quét mã QR sản phẩm'}</h3>
+            <p className="text-white/60 text-sm mt-1">{t('point_camera_at_qr') || 'Hướng camera vào mã QR'}</p>
+          </div>
+
+          {/* Camera Preview */}
+          <div className="relative">
+            <div
+              id="qr-reader-products"
+              className="w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden bg-black"
+            />
+            {/* Scanning overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 border-2 border-white/30 rounded-2xl" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-indigo-400 rounded-lg" />
+            </div>
+          </div>
+
+          {/* Cancel Button */}
+          <button
+            onClick={() => setShowQRScanner(false)}
+            className="mt-8 px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all"
+          >
+            {t('cancel') || 'Hủy'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

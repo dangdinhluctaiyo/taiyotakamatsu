@@ -32,7 +32,7 @@ export const Dashboard: React.FC = () => {
   // Filter and search products
   const filteredProducts = useMemo(() => {
     let products = db.products;
-    
+
     // Apply filter
     if (filter === 'available') {
       products = products.filter(p => p.currentPhysicalStock > 2);
@@ -45,8 +45,8 @@ export const Dashboard: React.FC = () => {
     // Apply search
     if (search.trim()) {
       const s = search.toLowerCase();
-      products = products.filter(p => 
-        p.name.toLowerCase().includes(s) || 
+      products = products.filter(p =>
+        p.name.toLowerCase().includes(s) ||
         p.code.toLowerCase().includes(s)
       );
     }
@@ -68,7 +68,7 @@ export const Dashboard: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <p className="text-blue-200 text-sm">{t('dashboard_welcome')}</p>
           <h1 className="text-2xl md:text-3xl font-bold mt-1">{db.currentUser?.name}</h1>
-          
+
           {/* Warning banner */}
           {overdueOrders.length > 0 && (
             <div className="mt-4 bg-red-500/20 backdrop-blur border border-red-400/30 rounded-xl p-3 flex items-center gap-3">
@@ -82,32 +82,32 @@ export const Dashboard: React.FC = () => {
       {/* Main content - overlapping header */}
       <div className="px-4 md:px-8 -mt-14 md:-mt-16 pb-24 md:pb-8">
         <div className="max-w-6xl mx-auto space-y-4">
-          
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard 
-              label={t('total_equipment')} 
+            <StatCard
+              label={t('total_equipment')}
               value={db.products.length}
               subValue={`${inventoryStats.totalItems} ${t('total_units')}`}
               icon={<Package className="w-5 h-5" />}
               color="blue"
             />
-            <StatCard 
-              label={t('on_rent') || 'Đang cho thuê'} 
+            <StatCard
+              label={t('on_rent') || 'Đang cho thuê'}
               value={inventoryStats.totalRenting}
               subValue={`${db.orders.filter(o => o.status === 'ACTIVE').length} ${t('active_orders_count') || 'đơn'}`}
               icon={<ArrowUpCircle className="w-5 h-5" />}
               color="green"
             />
-            <StatCard 
-              label={t('available')} 
+            <StatCard
+              label={t('available')}
               value={inventoryStats.totalAvailable}
               subValue={t('ready_in_stock') || 'trong kho'}
               icon={<ArrowDownCircle className="w-5 h-5" />}
               color="indigo"
             />
-            <StatCard 
-              label={t('need_attention') || 'Cần chú ý'} 
+            <StatCard
+              label={t('need_attention') || 'Cần chú ý'}
               value={inventoryStats.lowStockCount + inventoryStats.outOfStockCount}
               subValue={`${inventoryStats.outOfStockCount} ${t('out_of_stock_count') || 'hết hàng'}`}
               icon={<AlertTriangle className="w-5 h-5" />}
@@ -153,15 +153,15 @@ export const Dashboard: React.FC = () => {
                   const availPercent = (product.currentPhysicalStock / product.totalOwned) * 100;
                   const isOut = product.currentPhysicalStock === 0;
                   const isLow = product.currentPhysicalStock > 0 && product.currentPhysicalStock <= 2;
-                  
+
                   return (
                     <div key={product.id} className="p-4 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
                         {/* Product Image */}
                         <div className="relative shrink-0">
-                          <img 
-                            src={product.imageUrl} 
-                            alt="" 
+                          <img
+                            src={product.imageUrl}
+                            alt=""
                             className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover bg-slate-100"
                           />
                           {(isOut || isLow) && (
@@ -189,7 +189,7 @@ export const Dashboard: React.FC = () => {
                           {/* Progress Bar */}
                           <div className="mt-2 flex items-center gap-3">
                             <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className={`h-full transition-all ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-green-500'}`}
                                 style={{ width: `${availPercent}%` }}
                               />
@@ -267,11 +267,10 @@ const FilterBtn = ({ active, onClick, label, count, color }: {
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
-        active 
-          ? 'bg-blue-600 text-white shadow-sm' 
-          : 'bg-white text-slate-600 border hover:bg-slate-50'
-      }`}
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${active
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'bg-white text-slate-600 border hover:bg-slate-50'
+        }`}
     >
       {color && <span className={`w-2 h-2 rounded-full ${active ? 'bg-white' : dotColors[color]}`} />}
       {label}
